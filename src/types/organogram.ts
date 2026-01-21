@@ -31,6 +31,27 @@ export interface Sector {
   created_at: string;
 }
 
+export interface DecorativeLine {
+  id: string;
+  start_x: number;
+  start_y: number;
+  end_x: number;
+  end_y: number;
+  color: string;
+  stroke_width: number;
+  created_at: string;
+}
+
+// Line colors
+export const LINE_COLORS = [
+  { name: 'Cinza', value: '#6B7280' },
+  { name: 'Preto', value: '#1F2937' },
+  { name: 'Azul', value: '#3B82F6' },
+  { name: 'Verde', value: '#22C55E' },
+  { name: 'Vermelho', value: '#EF4444' },
+  { name: 'Roxo', value: '#8B5CF6' },
+];
+
 // Vibrant colors for cards
 export const CARD_COLORS = [
   { name: 'Azul', value: '#3B82F6', class: 'bg-blue-500' },
