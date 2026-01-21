@@ -1,6 +1,7 @@
 import { useState, useRef, memo, useCallback } from 'react';
 import { Person, CARD_COLORS, CardSize, CARD_SIZES } from '@/types/organogram';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Trash2 } from 'lucide-react';
 
 interface PersonCardProps {
@@ -10,6 +11,7 @@ interface PersonCardProps {
   onConnectionStart: (personId: string) => void;
   onConnectionEnd: (personId: string) => void;
   onDoubleClick: (person: Person) => void;
+  onSelect?: (personId: string) => void;
   onDelete?: (personId: string) => void;
   isConnecting: boolean;
   connectingFrom: string | null;
@@ -26,6 +28,7 @@ export const PersonCard = memo(function PersonCard({
   onConnectionStart,
   onConnectionEnd,
   onDoubleClick,
+  onSelect,
   onDelete,
   isConnecting,
   connectingFrom,
@@ -34,6 +37,7 @@ export const PersonCard = memo(function PersonCard({
   cardSize,
   isCollapsed,
 }: PersonCardProps) {
+  const isMobile = useIsMobile();
   const [showConnectionPoints, setShowConnectionPoints] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +85,14 @@ export const PersonCard = memo(function PersonCard({
     dragStartRef.current = null;
   }, [onDragEnd, connectingFrom, person.id, onConnectionEnd]);
 
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Don't select when clicking buttons (trash / connection points)
+    if (target.closest('button')) return;
+    if (hasDraggedRef.current) return;
+    onSelect?.(person.id);
+  }, [onSelect, person.id]);
+
   const handleDelete = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -122,6 +134,7 @@ export const PersonCard = memo(function PersonCard({
       onMouseUp={handleMouseUp}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
       onDoubleClick={handleDoubleClick}
     >
       {/* Content */}
@@ -142,7 +155,10 @@ export const PersonCard = memo(function PersonCard({
       {/* Delete button - shows on hover */}
       {onDelete && (
         <button
-          className="absolute top-1 right-1 p-1 rounded-md bg-destructive/90 text-destructive-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive transition-opacity duration-150"
+          className={cn(
+            'absolute top-1 right-1 p-1 rounded-md bg-destructive/90 text-destructive-foreground hover:bg-destructive transition-opacity duration-150',
+            (isMobile || isSelected) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          )}
           onClick={handleDelete}
           title="Remover"
         >
