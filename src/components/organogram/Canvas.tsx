@@ -350,6 +350,14 @@ export function Canvas() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isTypingInField = !!activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.isContentEditable
+      );
+
       if (e.key === 'Escape') {
         setConnectingFrom(null);
         setTempConnection(null);
@@ -359,6 +367,9 @@ export function Canvas() {
         setSelectedConnectionId(null);
       }
       
+      // Don't run destructive/global shortcuts while editing a card (dialog) or typing in a field.
+      if (dialogOpen || isTypingInField) return;
+
       if (e.key === 'Delete' || e.key === 'Backspace') {
         // Delete selected connection
         if (selectedConnectionId) {
@@ -380,7 +391,7 @@ export function Canvas() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedConnectionId, selectedIds, deleteConnection, deletePerson, people]);
+  }, [dialogOpen, selectedConnectionId, selectedIds, deleteConnection, deletePerson, people]);
 
   // Connection click handlers
   const handleConnectionClick = useCallback((connectionId: string) => {
