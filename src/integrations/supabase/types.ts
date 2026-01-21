@@ -60,6 +60,7 @@ export type Database = {
           position_y: number
           role: string
           sector: string
+          sector_id: string | null
           updated_at: string
         }
         Insert: {
@@ -71,6 +72,7 @@ export type Database = {
           position_y?: number
           role: string
           sector?: string
+          sector_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -82,7 +84,37 @@ export type Database = {
           position_y?: number
           role?: string
           sector?: string
+          sector_id?: string | null
           updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_people_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "org_sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_sectors: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
