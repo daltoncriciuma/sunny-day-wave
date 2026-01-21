@@ -65,7 +65,7 @@ export function ConnectionLines({
   };
 
   return (
-    <svg className="absolute inset-0 overflow-visible" style={{ zIndex: 5 }}>
+    <svg className="absolute inset-0 overflow-visible pointer-events-none" style={{ zIndex: 1 }}>
       <defs>
         <marker
           id="arrowhead"
@@ -126,7 +126,7 @@ export function ConnectionLines({
               stroke="transparent"
               strokeWidth="16"
               fill="none"
-              className="cursor-pointer"
+              className="cursor-pointer pointer-events-auto"
               onClick={(e) => {
                 e.stopPropagation();
                 onConnectionClick(conn.id);
