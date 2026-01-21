@@ -5,7 +5,13 @@ import { TopBar } from './TopBar';
 import { PersonCard } from './PersonCard';
 import { ConnectionLines } from './ConnectionLines';
 import { PersonDialog } from './PersonDialog';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 
 export function Canvas() {
   const {
@@ -37,6 +43,8 @@ export function Canvas() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [newCardPosition, setNewCardPosition] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Handle zoom
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2));
@@ -151,8 +159,9 @@ export function Canvas() {
   };
 
   // Handle add person
-  const handleAddPerson = () => {
+  const handleAddPerson = (position?: { x: number; y: number }) => {
     setSelectedPerson(null);
+    setNewCardPosition(position || null);
     setDialogOpen(true);
   };
 
@@ -160,8 +169,20 @@ export function Canvas() {
   const handleDoubleClick = (e: React.MouseEvent) => {
     if (e.target === canvasRef.current) {
       const pos = getCanvasPosition(e.clientX, e.clientY);
-      setSelectedPerson(null);
-      setDialogOpen(true);
+      handleAddPerson(pos);
+    }
+  };
+
+  // Capture position on right click (before context menu opens)
+  const handleContextMenu = (e: React.MouseEvent) => {
+    const pos = getCanvasPosition(e.clientX, e.clientY);
+    setContextMenuPosition(pos);
+  };
+
+  // Add card at captured position
+  const handleContextMenuAdd = () => {
+    if (contextMenuPosition) {
+      handleAddPerson(contextMenuPosition);
     }
   };
 
@@ -188,59 +209,71 @@ export function Canvas() {
   return (
     <div className="h-screen w-screen overflow-hidden bg-background">
       <TopBar
-        onAddPerson={handleAddPerson}
+        onAddPerson={() => handleAddPerson()}
         zoom={zoom}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetView={handleResetView}
       />
 
-      <div
-        ref={canvasRef}
-        className="absolute inset-0 pt-14 canvas-grid cursor-grab overflow-hidden"
-        style={{
-          cursor: isPanning ? 'grabbing' : draggingPerson ? 'grabbing' : 'grab',
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
-      >
-        <div
-          className="relative w-full h-full"
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: 'top left',
-          }}
-        >
-          <ConnectionLines
-            connections={connections}
-            people={people}
-            tempConnection={tempConnection}
-          />
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            ref={canvasRef}
+            className="absolute inset-0 pt-14 canvas-grid cursor-grab overflow-hidden"
+            style={{
+              cursor: isPanning ? 'grabbing' : draggingPerson ? 'grabbing' : 'grab',
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onDoubleClick={handleDoubleClick}
+            onContextMenu={handleContextMenu}
+          >
+            <div
+              className="relative w-full h-full"
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: 'top left',
+              }}
+            >
+              <ConnectionLines
+                connections={connections}
+                people={people}
+                tempConnection={tempConnection}
+              />
 
-          {people.map(person => (
-            <PersonCard
-              key={person.id}
-              person={person}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onConnectionStart={handleConnectionStart}
-              onConnectionEnd={handleConnectionEnd}
-              onDoubleClick={handleCardClick}
-              isConnecting={!!connectingFrom}
-              connectingFrom={connectingFrom}
-              isDragging={draggingPerson?.id === person.id}
-            />
-          ))}
-        </div>
-      </div>
+              {people.map(person => (
+                <PersonCard
+                  key={person.id}
+                  person={person}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onConnectionStart={handleConnectionStart}
+                  onConnectionEnd={handleConnectionEnd}
+                  onDoubleClick={handleCardClick}
+                  isConnecting={!!connectingFrom}
+                  connectingFrom={connectingFrom}
+                  isDragging={draggingPerson?.id === person.id}
+                />
+              ))}
+            </div>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={handleContextMenuAdd} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Adicionar caixa
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
 
       <PersonDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         person={selectedPerson}
+        initialPosition={newCardPosition}
         onSave={addPerson}
         onUpdate={updatePerson}
         onDelete={deletePerson}
@@ -250,7 +283,7 @@ export function Canvas() {
       {people.length === 0 && (
         <div className="fixed inset-0 flex items-center justify-center pointer-events-none pt-14">
           <div className="text-center text-muted-foreground">
-            <p className="text-lg font-medium">Clique em "Adicionar" ou dê duplo clique na tela</p>
+            <p className="text-lg font-medium">Clique direito ou dê duplo clique na tela</p>
             <p className="text-sm mt-1">para criar seu primeiro card</p>
           </div>
         </div>

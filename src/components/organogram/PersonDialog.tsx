@@ -24,6 +24,7 @@ interface PersonDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   person: Person | null;
+  initialPosition?: { x: number; y: number } | null;
   onSave: (data: Omit<Person, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdate: (id: string, data: Partial<Person>) => void;
   onDelete: (id: string) => void;
@@ -33,6 +34,7 @@ export function PersonDialog({
   open,
   onOpenChange,
   person,
+  initialPosition,
   onSave,
   onUpdate,
   onDelete,
@@ -65,13 +67,17 @@ export function PersonDialog({
         role: sector // Keep role synced with sector for compatibility
       });
     } else {
+      const pos = initialPosition || { 
+        x: 200 + Math.random() * 300, 
+        y: 200 + Math.random() * 200 
+      };
       onSave({
         name,
         role: sector, // Use sector as role for compatibility
         sector,
         avatar_url: selectedColor,
-        position_x: 200 + Math.random() * 300,
-        position_y: 200 + Math.random() * 200,
+        position_x: pos.x,
+        position_y: pos.y,
       });
     }
     onOpenChange(false);
