@@ -8,7 +8,7 @@ interface PersonCardProps {
   onDragEnd: () => void;
   onConnectionStart: (personId: string) => void;
   onConnectionEnd: (personId: string) => void;
-  onClick: (person: Person) => void;
+  onDoubleClick: (person: Person) => void;
   isConnecting: boolean;
   connectingFrom: string | null;
   isDragging: boolean;
@@ -20,7 +20,7 @@ export function PersonCard({
   onDragEnd,
   onConnectionStart,
   onConnectionEnd,
-  onClick,
+  onDoubleClick,
   isConnecting,
   connectingFrom,
   isDragging,
@@ -65,7 +65,7 @@ export function PersonCard({
       onMouseUp={onDragEnd}
       onMouseEnter={() => setShowConnectionPoints(true)}
       onMouseLeave={() => setShowConnectionPoints(false)}
-      onClick={() => !isDragging && onClick(person)}
+      onDoubleClick={() => !isDragging && onDoubleClick(person)}
     >
       {/* Content */}
       <div className="p-4 h-full flex flex-col justify-center items-center text-center">
