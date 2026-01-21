@@ -68,11 +68,11 @@ export function PersonCard({
       onClick={() => !isDragging && onClick(person)}
     >
       {/* Content */}
-      <div className="p-4 h-full flex flex-col justify-center">
+      <div className="p-4 h-full flex flex-col justify-center items-center text-center">
         <h3 className="font-bold text-white text-base leading-tight drop-shadow-sm">
           {person.name}
         </h3>
-        <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full bg-white/20 text-white/90 w-fit">
+        <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full border border-white/40 text-white/90">
           {person.sector}
         </span>
       </div>
