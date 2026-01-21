@@ -94,7 +94,7 @@ export function PersonCard({
         )}>
           {person.name}
         </h3>
-        {!isCollapsed && (
+        {!isCollapsed && person.sector && (
           <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full border border-border text-muted-foreground truncate max-w-full">
             {person.sector}
           </span>
