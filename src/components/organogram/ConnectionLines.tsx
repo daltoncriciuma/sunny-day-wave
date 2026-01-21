@@ -1,16 +1,19 @@
-import { Person, Connection } from '@/types/organogram';
+import { Person, Connection, CardSize, CARD_SIZES } from '@/types/organogram';
 
 interface ConnectionLinesProps {
   connections: Connection[];
   people: Person[];
   tempConnection: { from: string; toX: number; toY: number } | null;
+  cardSize: CardSize;
+  isCollapsed: boolean;
 }
 
-// Card dimensions
-const CARD_WIDTH = 224; // w-56 = 14rem = 224px
-const CARD_HEIGHT = 96; // h-24 = 6rem = 96px
+export function ConnectionLines({ connections, people, tempConnection, cardSize, isCollapsed }: ConnectionLinesProps) {
+  // Get card dimensions based on size and collapsed state
+  const dimensions = CARD_SIZES[cardSize];
+  const CARD_WIDTH = dimensions.width;
+  const CARD_HEIGHT = isCollapsed ? 40 : dimensions.height;
 
-export function ConnectionLines({ connections, people, tempConnection }: ConnectionLinesProps) {
   const getPersonById = (personId: string) => {
     return people.find(p => p.id === personId);
   };

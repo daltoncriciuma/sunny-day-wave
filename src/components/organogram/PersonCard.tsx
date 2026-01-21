@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Person, CARD_COLORS } from '@/types/organogram';
+import { Person, CARD_COLORS, CardSize, CARD_SIZES } from '@/types/organogram';
 import { cn } from '@/lib/utils';
 
 interface PersonCardProps {
@@ -12,6 +12,9 @@ interface PersonCardProps {
   isConnecting: boolean;
   connectingFrom: string | null;
   isDragging: boolean;
+  isSelected?: boolean;
+  cardSize: CardSize;
+  isCollapsed: boolean;
 }
 
 export function PersonCard({
@@ -24,26 +27,25 @@ export function PersonCard({
   isConnecting,
   connectingFrom,
   isDragging,
+  isSelected,
+  cardSize,
+  isCollapsed,
 }: PersonCardProps) {
   const [showConnectionPoints, setShowConnectionPoints] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Get color from avatar_url (we're reusing this field to store color)
   const cardColor = person.avatar_url || CARD_COLORS[0].value;
+  
+  // Get dimensions based on size and collapsed state
+  const dimensions = CARD_SIZES[cardSize];
+  const height = isCollapsed ? 40 : dimensions.height;
+  const width = dimensions.width;
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     e.preventDefault();
     onDragStart(e, person);
-  };
-
-  const handleConnectionPointClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (connectingFrom && connectingFrom !== person.id) {
-      onConnectionEnd(person.id);
-    } else {
-      onConnectionStart(person.id);
-    }
   };
 
   const handleConnectionPointMouseDown = (e: React.MouseEvent) => {
@@ -65,13 +67,16 @@ export function PersonCard({
       ref={cardRef}
       className={cn(
         'org-card absolute cursor-grab select-none',
-        'w-56 h-24 rounded-xl shadow-lg overflow-hidden',
-        'border-2 bg-card',
-        isDragging && 'dragging'
+        'rounded-xl shadow-lg overflow-hidden',
+        'border-2 bg-card transition-all duration-200',
+        isDragging && 'dragging',
+        isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
       )}
       style={{
         left: person.position_x,
         top: person.position_y,
+        width,
+        height,
         transform: 'translate(-50%, -50%)',
         borderColor: cardColor,
       }}
@@ -82,13 +87,18 @@ export function PersonCard({
       onDoubleClick={() => !isDragging && onDoubleClick(person)}
     >
       {/* Content */}
-      <div className="p-4 h-full flex flex-col justify-center items-center text-center">
-        <h3 className="font-bold text-foreground text-base leading-tight">
+      <div className="p-2 h-full flex flex-col justify-center items-center text-center">
+        <h3 className={cn(
+          'font-bold text-foreground leading-tight truncate w-full',
+          isCollapsed ? 'text-sm' : 'text-base'
+        )}>
           {person.name}
         </h3>
-        <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full border border-border text-muted-foreground">
-          {person.sector}
-        </span>
+        {!isCollapsed && (
+          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full border border-border text-muted-foreground truncate max-w-full">
+            {person.sector}
+          </span>
+        )}
       </div>
 
       {/* Connection points */}

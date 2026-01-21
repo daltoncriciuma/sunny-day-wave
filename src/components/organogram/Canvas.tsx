@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useOrganogram } from '@/hooks/useOrganogram';
-import { Person } from '@/types/organogram';
+import { Person, CardSize, CARD_SIZES } from '@/types/organogram';
 import { TopBar } from './TopBar';
 import { PersonCard } from './PersonCard';
 import { ConnectionLines } from './ConnectionLines';
 import { PersonDialog } from './PersonDialog';
+import { SelectionBox } from './SelectionBox';
+import { ViewControls } from './ViewControls';
 import { Loader2, Plus } from 'lucide-react';
 import {
   ContextMenu,
@@ -46,6 +48,18 @@ export function Canvas() {
   const [newCardPosition, setNewCardPosition] = useState<{ x: number; y: number } | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
+  // Multi-selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingSelection, setIsDraggingSelection] = useState(false);
+  const [dragStartPositions, setDragStartPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+
+  // View controls state
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [cardSize, setCardSize] = useState<CardSize>('medium');
+
   // Handle zoom
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2));
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.5));
@@ -83,36 +97,112 @@ export function Canvas() {
     };
   }, [pan, zoom]);
 
+  // Check if a person is inside the selection box
+  const isInsideSelection = useCallback((person: Person, start: { x: number; y: number }, end: { x: number; y: number }) => {
+    const dimensions = CARD_SIZES[cardSize];
+    const cardWidth = dimensions.width;
+    const cardHeight = isCollapsed ? 40 : dimensions.height;
+    
+    const selLeft = Math.min(start.x, end.x);
+    const selRight = Math.max(start.x, end.x);
+    const selTop = Math.min(start.y, end.y);
+    const selBottom = Math.max(start.y, end.y);
+    
+    const cardLeft = person.position_x - cardWidth / 2;
+    const cardRight = person.position_x + cardWidth / 2;
+    const cardTop = person.position_y - cardHeight / 2;
+    const cardBottom = person.position_y + cardHeight / 2;
+    
+    // Check if card overlaps with selection
+    return !(cardRight < selLeft || cardLeft > selRight || cardBottom < selTop || cardTop > selBottom);
+  }, [cardSize, isCollapsed]);
+
   // Handle card drag
   const handleDragStart = (e: React.MouseEvent, person: Person) => {
     const pos = getCanvasPosition(e.clientX, e.clientY);
-    setDragOffset({
-      x: pos.x - person.position_x,
-      y: pos.y - person.position_y,
-    });
-    setDraggingPerson(person);
+    
+    // If clicking on a selected card, drag all selected
+    if (selectedIds.has(person.id) && selectedIds.size > 1) {
+      setIsDraggingSelection(true);
+      // Store initial positions of all selected cards
+      const positions = new Map<string, { x: number; y: number }>();
+      people.filter(p => selectedIds.has(p.id)).forEach(p => {
+        positions.set(p.id, { x: p.position_x, y: p.position_y });
+      });
+      setDragStartPositions(positions);
+      setDragOffset({
+        x: pos.x - person.position_x,
+        y: pos.y - person.position_y,
+      });
+      setDraggingPerson(person);
+    } else {
+      // Single card drag
+      setSelectedIds(new Set([person.id]));
+      setDragOffset({
+        x: pos.x - person.position_x,
+        y: pos.y - person.position_y,
+      });
+      setDraggingPerson(person);
+    }
   };
 
   const handleDragEnd = () => {
     setDraggingPerson(null);
+    setIsDraggingSelection(false);
+    setDragStartPositions(new Map());
   };
 
-  // Handle panning
+  // Handle panning and selection box
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.target === canvasRef.current) {
-      setIsPanning(true);
-      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      if (e.button === 0) {
+        // Left click - start selection box
+        const pos = getCanvasPosition(e.clientX, e.clientY);
+        setIsSelecting(true);
+        setSelectionStart(pos);
+        setSelectionEnd(pos);
+        // Clear selection if not holding shift
+        if (!e.shiftKey) {
+          setSelectedIds(new Set());
+        }
+      } else if (e.button === 1) {
+        // Middle click - pan
+        setIsPanning(true);
+        setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      }
     }
   };
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (draggingPerson) {
       const pos = getCanvasPosition(e.clientX, e.clientY);
-      updatePosition(
-        draggingPerson.id,
-        pos.x - dragOffset.x,
-        pos.y - dragOffset.y
-      );
+      
+      if (isDraggingSelection && dragStartPositions.size > 0) {
+        // Move all selected cards
+        const deltaX = pos.x - dragOffset.x - draggingPerson.position_x;
+        const deltaY = pos.y - dragOffset.y - draggingPerson.position_y;
+        
+        people.filter(p => selectedIds.has(p.id)).forEach(p => {
+          const startPos = dragStartPositions.get(p.id);
+          if (startPos) {
+            updatePosition(
+              p.id,
+              startPos.x + deltaX + (pos.x - dragOffset.x - (dragStartPositions.get(draggingPerson.id)?.x || 0)),
+              startPos.y + deltaY + (pos.y - dragOffset.y - (dragStartPositions.get(draggingPerson.id)?.y || 0))
+            );
+          }
+        });
+      } else {
+        // Single card drag
+        updatePosition(
+          draggingPerson.id,
+          pos.x - dragOffset.x,
+          pos.y - dragOffset.y
+        );
+      }
+    } else if (isSelecting && selectionStart) {
+      const pos = getCanvasPosition(e.clientX, e.clientY);
+      setSelectionEnd(pos);
     } else if (isPanning) {
       setPan({
         x: e.clientX - panStart.x,
@@ -126,16 +216,33 @@ export function Canvas() {
         toY: pos.y,
       });
     }
-  }, [draggingPerson, isPanning, connectingFrom, getCanvasPosition, dragOffset, panStart, updatePosition]);
+  }, [draggingPerson, isSelecting, isPanning, connectingFrom, getCanvasPosition, dragOffset, panStart, updatePosition, selectionStart, isDraggingSelection, dragStartPositions, people, selectedIds]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
+    // Finalize selection
+    if (isSelecting && selectionStart && selectionEnd) {
+      const newSelected = new Set(selectedIds);
+      people.forEach(person => {
+        if (isInsideSelection(person, selectionStart, selectionEnd)) {
+          newSelected.add(person.id);
+        }
+      });
+      setSelectedIds(newSelected);
+    }
+    
     setDraggingPerson(null);
     setIsPanning(false);
+    setIsSelecting(false);
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    setIsDraggingSelection(false);
+    setDragStartPositions(new Map());
+    
     if (connectingFrom) {
       setConnectingFrom(null);
       setTempConnection(null);
     }
-  };
+  }, [isSelecting, selectionStart, selectionEnd, selectedIds, people, isInsideSelection, connectingFrom]);
 
   // Handle connection
   const handleConnectionStart = (personId: string) => {
@@ -150,7 +257,7 @@ export function Canvas() {
     setTempConnection(null);
   };
 
-  // Handle card click
+  // Handle card double click
   const handleCardClick = (person: Person) => {
     if (!draggingPerson) {
       setSelectedPerson(person);
@@ -186,17 +293,28 @@ export function Canvas() {
     }
   };
 
-  // Cancel connection on escape
+  // Cancel selection/connection on escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setConnectingFrom(null);
         setTempConnection(null);
+        setSelectedIds(new Set());
+        setIsSelecting(false);
+        setSelectionStart(null);
+        setSelectionEnd(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Click outside to deselect
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (e.target === canvasRef.current && !isSelecting) {
+      setSelectedIds(new Set());
+    }
+  };
 
   if (loading) {
     return (
@@ -220,9 +338,9 @@ export function Canvas() {
         <ContextMenuTrigger asChild>
           <div
             ref={canvasRef}
-            className="absolute inset-0 pt-14 canvas-grid cursor-grab overflow-hidden"
+            className="absolute inset-0 pt-14 canvas-grid cursor-crosshair overflow-hidden"
             style={{
-              cursor: isPanning ? 'grabbing' : draggingPerson ? 'grabbing' : 'grab',
+              cursor: isPanning ? 'grabbing' : draggingPerson ? 'grabbing' : isSelecting ? 'crosshair' : 'crosshair',
             }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -230,6 +348,7 @@ export function Canvas() {
             onMouseLeave={handleMouseUp}
             onDoubleClick={handleDoubleClick}
             onContextMenu={handleContextMenu}
+            onClick={handleCanvasClick}
           >
             <div
               className="relative w-full h-full"
@@ -242,6 +361,8 @@ export function Canvas() {
                 connections={connections}
                 people={people}
                 tempConnection={tempConnection}
+                cardSize={cardSize}
+                isCollapsed={isCollapsed}
               />
 
               {people.map(person => (
@@ -256,8 +377,16 @@ export function Canvas() {
                   isConnecting={!!connectingFrom}
                   connectingFrom={connectingFrom}
                   isDragging={draggingPerson?.id === person.id}
+                  isSelected={selectedIds.has(person.id)}
+                  cardSize={cardSize}
+                  isCollapsed={isCollapsed}
                 />
               ))}
+
+              {/* Selection box */}
+              {isSelecting && selectionStart && selectionEnd && (
+                <SelectionBox start={selectionStart} end={selectionEnd} />
+              )}
             </div>
           </div>
         </ContextMenuTrigger>
@@ -268,6 +397,13 @@ export function Canvas() {
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
+
+      <ViewControls
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        cardSize={cardSize}
+        onCardSizeChange={setCardSize}
+      />
 
       <PersonDialog
         open={dialogOpen}
