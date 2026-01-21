@@ -17,20 +17,22 @@ export function ConnectionLines({ connections, people, tempConnection }: Connect
 
   // Get connection point on the right side of the card (for "from")
   const getRightConnectionPoint = (person: Person) => ({
-    x: person.position_x + CARD_WIDTH,
-    y: person.position_y + CARD_HEIGHT / 2,
+    // NOTE: person.position_x / position_y represent the CARD CENTER
+    // because the card is rendered with translate(-50%, -50%).
+    x: person.position_x + CARD_WIDTH / 2,
+    y: person.position_y,
   });
 
   // Get connection point on the left side of the card (for "to")
   const getLeftConnectionPoint = (person: Person) => ({
-    x: person.position_x,
-    y: person.position_y + CARD_HEIGHT / 2,
+    x: person.position_x - CARD_WIDTH / 2,
+    y: person.position_y,
   });
 
   // Get best connection points based on relative positions
   const getConnectionPoints = (fromPerson: Person, toPerson: Person) => {
-    const fromCenterX = fromPerson.position_x + CARD_WIDTH / 2;
-    const toCenterX = toPerson.position_x + CARD_WIDTH / 2;
+    const fromCenterX = fromPerson.position_x;
+    const toCenterX = toPerson.position_x;
 
     // If target is to the right, connect from right to left
     if (toCenterX > fromCenterX) {
@@ -41,8 +43,8 @@ export function ConnectionLines({ connections, people, tempConnection }: Connect
     } else {
       // If target is to the left, connect from left to right
       return {
-        from: { x: fromPerson.position_x, y: fromPerson.position_y + CARD_HEIGHT / 2 },
-        to: { x: toPerson.position_x + CARD_WIDTH, y: toPerson.position_y + CARD_HEIGHT / 2 },
+        from: getLeftConnectionPoint(fromPerson),
+        to: getRightConnectionPoint(toPerson),
       };
     }
   };
