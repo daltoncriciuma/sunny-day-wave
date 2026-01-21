@@ -57,6 +57,7 @@ export type Database = {
           created_at: string
           fill_card: boolean
           id: string
+          locked: boolean
           name: string
           position_x: number
           position_y: number
@@ -71,6 +72,7 @@ export type Database = {
           created_at?: string
           fill_card?: boolean
           id?: string
+          locked?: boolean
           name: string
           position_x?: number
           position_y?: number
@@ -85,6 +87,7 @@ export type Database = {
           created_at?: string
           fill_card?: boolean
           id?: string
+          locked?: boolean
           name?: string
           position_x?: number
           position_y?: number

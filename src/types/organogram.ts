@@ -12,6 +12,7 @@ export interface Person {
   sector_id: string | null;
   card_size: CardSize;
   fill_card: boolean;
+  locked: boolean;
   created_at: string;
   updated_at: string;
 }

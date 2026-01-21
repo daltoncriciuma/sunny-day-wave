@@ -23,11 +23,12 @@ export function useOrganogram() {
       if (peopleRes.error) throw peopleRes.error;
       if (connectionsRes.error) throw connectionsRes.error;
 
-      // Cast card_size to CardSize type and ensure fill_card exists
+      // Cast card_size to CardSize type and ensure fill_card and locked exist
       const typedPeople = (peopleRes.data || []).map(p => ({
         ...p,
         card_size: (p.card_size || 'medium') as CardSize,
         fill_card: p.fill_card ?? false,
+        locked: p.locked ?? false,
       }));
       setPeople(typedPeople);
       setConnections(connectionsRes.data || []);
@@ -75,7 +76,7 @@ export function useOrganogram() {
 
       if (error) throw error;
       
-      const typedData = { ...data, card_size: (data.card_size || 'medium') as CardSize, fill_card: data.fill_card ?? false };
+      const typedData = { ...data, card_size: (data.card_size || 'medium') as CardSize, fill_card: data.fill_card ?? false, locked: data.locked ?? false };
       setPeople(prev => [...prev, typedData]);
       toast({
         title: 'Processo adicionado',
@@ -111,7 +112,7 @@ export function useOrganogram() {
         return null;
       }
       
-      const typedData = { ...data, card_size: (data.card_size || 'medium') as CardSize, fill_card: data.fill_card ?? false };
+      const typedData = { ...data, card_size: (data.card_size || 'medium') as CardSize, fill_card: data.fill_card ?? false, locked: data.locked ?? false };
       setPeople(prev => prev.map(p => p.id === id ? typedData : p));
       return typedData;
     } catch (error) {
