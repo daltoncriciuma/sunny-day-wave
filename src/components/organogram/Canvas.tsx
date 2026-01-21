@@ -99,7 +99,7 @@ export function Canvas() {
   }, [pan, zoom]);
 
   // Handle card drag
-  const handleDragStart = (e: React.MouseEvent, person: Person) => {
+  const handleDragStart = useCallback((e: React.MouseEvent, person: Person) => {
     const pos = getCanvasPosition(e.clientX, e.clientY);
     setDragOffset({
       x: pos.x - person.position_x,
@@ -121,15 +121,15 @@ export function Canvas() {
       setSelectedIds(new Set());
       setDragGroupStartPositions(new Map());
     }
-  };
+  }, [getCanvasPosition, selectedIds, people]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggingPerson(null);
     setDragGroupStartPositions(new Map());
-  };
+  }, []);
 
   // Handle panning (middle click or space + drag) and selection
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Close context menus on any click
     setContextMenu(null);
     setConnectionContextMenu(null);
@@ -143,7 +143,7 @@ export function Canvas() {
       setSelectedIds(new Set());
       setSelectedConnectionId(null);
     }
-  };
+  }, [getCanvasPosition]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (draggingPerson) {
@@ -183,7 +183,7 @@ export function Canvas() {
     }
   }, [draggingPerson, isPanning, connectingFrom, isSelecting, selectionStart, getCanvasPosition, dragOffset, panStart, updatePosition, selectedIds, dragGroupStartPositions]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     if (isSelecting && selectionStart && selectionEnd) {
       // Calculate bounding box
       const left = Math.min(selectionStart.x, selectionEnd.x);
@@ -223,46 +223,46 @@ export function Canvas() {
       setConnectingFrom(null);
       setTempConnection(null);
     }
-  };
+  }, [isSelecting, selectionStart, selectionEnd, cardSize, isCollapsed, people, connectingFrom]);
 
   // Handle connection
-  const handleConnectionStart = (personId: string) => {
+  const handleConnectionStart = useCallback((personId: string) => {
     setConnectingFrom(personId);
-  };
+  }, []);
 
-  const handleConnectionEnd = (personId: string) => {
+  const handleConnectionEnd = useCallback((personId: string) => {
     if (connectingFrom && connectingFrom !== personId) {
       addConnection(connectingFrom, personId);
     }
     setConnectingFrom(null);
     setTempConnection(null);
-  };
+  }, [connectingFrom, addConnection]);
 
   // Handle card double click
-  const handleCardClick = (person: Person) => {
+  const handleCardClick = useCallback((person: Person) => {
     if (!draggingPerson) {
       setSelectedPerson(person);
       setDialogOpen(true);
     }
-  };
+  }, [draggingPerson]);
 
   // Handle add person
-  const handleAddPerson = (position?: { x: number; y: number }) => {
+  const handleAddPerson = useCallback((position?: { x: number; y: number }) => {
     setSelectedPerson(null);
     setNewCardPosition(position || null);
     setDialogOpen(true);
-  };
+  }, []);
 
   // Double click to add
-  const handleDoubleClick = (e: React.MouseEvent) => {
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     if (e.target === canvasRef.current) {
       const pos = getCanvasPosition(e.clientX, e.clientY);
       handleAddPerson(pos);
     }
-  };
+  }, [getCanvasPosition, handleAddPerson]);
 
   // Right click context menu
-  const handleContextMenu = (e: React.MouseEvent) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const canvasPos = getCanvasPosition(e.clientX, e.clientY);
     setContextMenu({
@@ -270,15 +270,15 @@ export function Canvas() {
       y: e.clientY,
       canvasPos,
     });
-  };
+  }, [getCanvasPosition]);
 
   // Add card from context menu
-  const handleContextMenuAdd = () => {
+  const handleContextMenuAdd = useCallback(() => {
     if (contextMenu) {
       handleAddPerson(contextMenu.canvasPos);
       setContextMenu(null);
     }
-  };
+  }, [contextMenu, handleAddPerson]);
 
   // Close context menu on click outside
   useEffect(() => {
@@ -328,34 +328,34 @@ export function Canvas() {
   }, [selectedConnectionId, selectedIds, deleteConnection, deletePerson, people]);
 
   // Connection click handlers
-  const handleConnectionClick = (connectionId: string) => {
+  const handleConnectionClick = useCallback((connectionId: string) => {
     setSelectedConnectionId(connectionId);
     setSelectedIds(new Set()); // Clear card selection when selecting connection
-  };
+  }, []);
 
-  const handleConnectionContextMenu = (e: React.MouseEvent, connectionId: string) => {
+  const handleConnectionContextMenu = useCallback((e: React.MouseEvent, connectionId: string) => {
     setConnectionContextMenu({
       x: e.clientX,
       y: e.clientY,
       connectionId,
     });
     setSelectedConnectionId(connectionId);
-  };
+  }, []);
 
-  const handleDeleteConnection = () => {
+  const handleDeleteConnection = useCallback(() => {
     if (connectionContextMenu) {
       deleteConnection(connectionContextMenu.connectionId);
       setConnectionContextMenu(null);
       setSelectedConnectionId(null);
     }
-  };
+  }, [connectionContextMenu, deleteConnection]);
 
-  const handleInvertConnection = () => {
+  const handleInvertConnection = useCallback(() => {
     if (connectionContextMenu) {
       invertConnection(connectionContextMenu.connectionId);
       setConnectionContextMenu(null);
     }
-  };
+  }, [connectionContextMenu, invertConnection]);
 
   if (loading) {
     return (
