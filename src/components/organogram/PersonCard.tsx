@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Person, CARD_COLORS, CardSize, CARD_SIZES } from '@/types/organogram';
 import { cn } from '@/lib/utils';
+import { Trash2 } from 'lucide-react';
 
 interface PersonCardProps {
   person: Person;
@@ -9,6 +10,7 @@ interface PersonCardProps {
   onConnectionStart: (personId: string) => void;
   onConnectionEnd: (personId: string) => void;
   onDoubleClick: (person: Person) => void;
+  onDelete?: (personId: string) => void;
   isConnecting: boolean;
   connectingFrom: string | null;
   isDragging: boolean;
@@ -24,6 +26,7 @@ export function PersonCard({
   onConnectionStart,
   onConnectionEnd,
   onDoubleClick,
+  onDelete,
   isConnecting,
   connectingFrom,
   isDragging,
@@ -59,6 +62,14 @@ export function PersonCard({
     onDragEnd();
     if (connectingFrom && connectingFrom !== person.id) {
       onConnectionEnd(person.id);
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(person.id);
     }
   };
 
@@ -100,6 +111,23 @@ export function PersonCard({
           </span>
         )}
       </div>
+
+      {/* Delete button */}
+      {showConnectionPoints && onDelete && (
+        <button
+          className={cn(
+            'absolute top-1 right-1 p-1 rounded-md',
+            'bg-destructive/90 text-destructive-foreground',
+            'opacity-0 group-hover:opacity-100 hover:bg-destructive',
+            'transition-opacity duration-150',
+            showConnectionPoints && 'opacity-100'
+          )}
+          onClick={handleDelete}
+          title="Remover"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
 
       {/* Connection points */}
       {(showConnectionPoints || isConnecting) && (
