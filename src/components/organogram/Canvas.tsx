@@ -176,29 +176,27 @@ export function Canvas() {
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (draggingPerson) {
       const pos = getCanvasPosition(e.clientX, e.clientY);
+      const newX = pos.x - dragOffset.x;
+      const newY = pos.y - dragOffset.y;
       
       if (isDraggingSelection && dragStartPositions.size > 0) {
-        // Move all selected cards
-        const deltaX = pos.x - dragOffset.x - draggingPerson.position_x;
-        const deltaY = pos.y - dragOffset.y - draggingPerson.position_y;
-        
-        people.filter(p => selectedIds.has(p.id)).forEach(p => {
-          const startPos = dragStartPositions.get(p.id);
-          if (startPos) {
-            updatePosition(
-              p.id,
-              startPos.x + deltaX + (pos.x - dragOffset.x - (dragStartPositions.get(draggingPerson.id)?.x || 0)),
-              startPos.y + deltaY + (pos.y - dragOffset.y - (dragStartPositions.get(draggingPerson.id)?.y || 0))
-            );
-          }
-        });
+        // Calculate how much the dragged card moved from its start position
+        const draggedStartPos = dragStartPositions.get(draggingPerson.id);
+        if (draggedStartPos) {
+          const deltaX = newX - draggedStartPos.x;
+          const deltaY = newY - draggedStartPos.y;
+          
+          // Move all selected cards by the same delta
+          people.filter(p => selectedIds.has(p.id)).forEach(p => {
+            const startPos = dragStartPositions.get(p.id);
+            if (startPos) {
+              updatePosition(p.id, startPos.x + deltaX, startPos.y + deltaY);
+            }
+          });
+        }
       } else {
         // Single card drag
-        updatePosition(
-          draggingPerson.id,
-          pos.x - dragOffset.x,
-          pos.y - dragOffset.y
-        );
+        updatePosition(draggingPerson.id, newX, newY);
       }
     } else if (isSelecting && selectionStart) {
       const pos = getCanvasPosition(e.clientX, e.clientY);
