@@ -445,8 +445,10 @@ export function Canvas() {
         onContextMenu={handleContextMenu}
       >
         <div
-          className="relative w-full h-full"
+          className="relative"
           style={{
+            width: '6000px',
+            height: '4000px',
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: 'top left',
           }}

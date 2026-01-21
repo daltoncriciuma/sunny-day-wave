@@ -90,7 +90,7 @@ export function PersonDialog({
         position_x: pos.x,
         position_y: pos.y,
         sector_id: selectedSectorId,
-        card_size: 'medium',
+        card_size: 'small',
       });
     }
     onOpenChange(false);
