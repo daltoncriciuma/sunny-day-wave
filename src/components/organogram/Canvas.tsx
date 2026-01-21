@@ -54,6 +54,7 @@ export function Canvas() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const hasPannedRef = useRef(false);
 
   const [draggingPerson, setDraggingPerson] = useState<Person | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -153,7 +154,7 @@ export function Canvas() {
     setDragGroupStartPositions(new Map());
   }, []);
 
-  // Handle panning (middle click or space + drag) and selection
+  // Handle panning (right click + drag) and selection
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Close context menus on any click
     setContextMenu(null);
@@ -164,6 +165,15 @@ export function Canvas() {
     const isClickOnCard = target.closest('.org-card');
     const isClickOnButton = target.closest('button');
     
+    // Right click = start panning
+    if (e.button === 2) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      hasPannedRef.current = false;
+      return;
+    }
+    
     if (!isClickOnCard && !isClickOnButton && e.button === 0) {
       // Left click on empty canvas = start box selection
       const pos = getCanvasPosition(e.clientX, e.clientY);
@@ -173,7 +183,7 @@ export function Canvas() {
       setSelectedIds(new Set());
       setSelectedConnectionId(null);
     }
-  }, [getCanvasPosition]);
+  }, [getCanvasPosition, pan]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (draggingPerson) {
@@ -196,6 +206,7 @@ export function Canvas() {
         updatePosition(draggingPerson.id, newX, newY);
       }
     } else if (isPanning) {
+      hasPannedRef.current = true;
       setPan({
         x: e.clientX - panStart.x,
         y: e.clientY - panStart.y,
@@ -316,9 +327,14 @@ export function Canvas() {
     }
   }, [getCanvasPosition, handleAddPerson]);
 
-  // Right click context menu
+  // Right click context menu - only show if not panning
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    // Don't show context menu if we panned (dragged with right click)
+    if (hasPannedRef.current) {
+      hasPannedRef.current = false;
+      return;
+    }
     const canvasPos = getCanvasPosition(e.clientX, e.clientY);
     setContextMenu({
       x: e.clientX,
