@@ -159,7 +159,12 @@ export function Canvas() {
     setContextMenu(null);
     setConnectionContextMenu(null);
     
-    if (e.target === canvasRef.current && e.button === 0) {
+    // Check if clicking on a card or button (not empty canvas)
+    const target = e.target as HTMLElement;
+    const isClickOnCard = target.closest('.org-card');
+    const isClickOnButton = target.closest('button');
+    
+    if (!isClickOnCard && !isClickOnButton && e.button === 0) {
       // Left click on empty canvas = start box selection
       const pos = getCanvasPosition(e.clientX, e.clientY);
       setIsSelecting(true);
