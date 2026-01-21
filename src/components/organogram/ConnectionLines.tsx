@@ -6,11 +6,45 @@ interface ConnectionLinesProps {
   tempConnection: { from: string; toX: number; toY: number } | null;
 }
 
+// Card dimensions
+const CARD_WIDTH = 224; // w-56 = 14rem = 224px
+const CARD_HEIGHT = 96; // h-24 = 6rem = 96px
+
 export function ConnectionLines({ connections, people, tempConnection }: ConnectionLinesProps) {
-  const getPersonCenter = (personId: string) => {
-    const person = people.find(p => p.id === personId);
-    if (!person) return null;
-    return { x: person.position_x, y: person.position_y };
+  const getPersonById = (personId: string) => {
+    return people.find(p => p.id === personId);
+  };
+
+  // Get connection point on the right side of the card (for "from")
+  const getRightConnectionPoint = (person: Person) => ({
+    x: person.position_x + CARD_WIDTH,
+    y: person.position_y + CARD_HEIGHT / 2,
+  });
+
+  // Get connection point on the left side of the card (for "to")
+  const getLeftConnectionPoint = (person: Person) => ({
+    x: person.position_x,
+    y: person.position_y + CARD_HEIGHT / 2,
+  });
+
+  // Get best connection points based on relative positions
+  const getConnectionPoints = (fromPerson: Person, toPerson: Person) => {
+    const fromCenterX = fromPerson.position_x + CARD_WIDTH / 2;
+    const toCenterX = toPerson.position_x + CARD_WIDTH / 2;
+
+    // If target is to the right, connect from right to left
+    if (toCenterX > fromCenterX) {
+      return {
+        from: getRightConnectionPoint(fromPerson),
+        to: getLeftConnectionPoint(toPerson),
+      };
+    } else {
+      // If target is to the left, connect from left to right
+      return {
+        from: { x: fromPerson.position_x, y: fromPerson.position_y + CARD_HEIGHT / 2 },
+        to: { x: toPerson.position_x + CARD_WIDTH, y: toPerson.position_y + CARD_HEIGHT / 2 },
+      };
+    }
   };
 
   const createPath = (from: { x: number; y: number }, to: { x: number; y: number }) => {
@@ -53,9 +87,11 @@ export function ConnectionLines({ connections, people, tempConnection }: Connect
 
       {/* Existing connections */}
       {connections.map(conn => {
-        const from = getPersonCenter(conn.from_person_id);
-        const to = getPersonCenter(conn.to_person_id);
-        if (!from || !to) return null;
+        const fromPerson = getPersonById(conn.from_person_id);
+        const toPerson = getPersonById(conn.to_person_id);
+        if (!fromPerson || !toPerson) return null;
+
+        const { from, to } = getConnectionPoints(fromPerson, toPerson);
 
         return (
           <path
@@ -71,20 +107,24 @@ export function ConnectionLines({ connections, people, tempConnection }: Connect
       })}
 
       {/* Temporary connection while dragging */}
-      {tempConnection && (
-        <path
-          d={createPath(
-            getPersonCenter(tempConnection.from) || { x: 0, y: 0 },
-            { x: tempConnection.toX, y: tempConnection.toY }
-          )}
-          stroke="hsl(var(--primary))"
-          strokeWidth="2"
-          strokeDasharray="5,5"
-          fill="none"
-          markerEnd="url(#arrowhead-temp)"
-          className="animate-pulse"
-        />
-      )}
+      {tempConnection && (() => {
+        const fromPerson = getPersonById(tempConnection.from);
+        if (!fromPerson) return null;
+        
+        const fromPoint = getRightConnectionPoint(fromPerson);
+        
+        return (
+          <path
+            d={createPath(fromPoint, { x: tempConnection.toX, y: tempConnection.toY })}
+            stroke="hsl(var(--primary))"
+            strokeWidth="2"
+            strokeDasharray="5,5"
+            fill="none"
+            markerEnd="url(#arrowhead-temp)"
+            className="animate-pulse"
+          />
+        );
+      })()}
     </svg>
   );
 }
