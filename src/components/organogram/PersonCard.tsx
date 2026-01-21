@@ -50,6 +50,10 @@ export const PersonCard = memo(function PersonCard({
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    // Don't start drag if clicking on delete button or connection points
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+    
     e.stopPropagation();
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     hasDraggedRef.current = false;
