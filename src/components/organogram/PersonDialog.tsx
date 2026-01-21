@@ -58,11 +58,12 @@ export function PersonDialog({
     } else {
       setName('');
       setObservations('');
-      setSelectedColor(CARD_COLORS[0].value);
-      // Auto-fill sector when filter is active
+      // Auto-fill sector and color when filter is active
+      const defaultSector = sectors.find(s => s.id === defaultSectorId);
       setSelectedSectorId(defaultSectorId || null);
+      setSelectedColor(defaultSector?.color || CARD_COLORS[0].value);
     }
-  }, [person, open, defaultSectorId]);
+  }, [person, open, defaultSectorId, sectors]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
