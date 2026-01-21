@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Person, SECTORS, Sector } from '@/types/organogram';
+import { useState, useEffect } from 'react';
+import { Person, SECTORS, Sector, CARD_COLORS } from '@/types/organogram';
 import {
   Dialog,
   DialogContent,
@@ -17,11 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Trash2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Trash2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SECTOR_COLORS } from '@/types/organogram';
 
 interface PersonDialogProps {
   open: boolean;
@@ -41,66 +38,38 @@ export function PersonDialog({
   onDelete,
 }: PersonDialogProps) {
   const [name, setName] = useState('');
-  const [role, setRole] = useState('');
   const [sector, setSector] = useState<Sector>('Comercial');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedColor, setSelectedColor] = useState(CARD_COLORS[0].value);
 
   useEffect(() => {
     if (person) {
       setName(person.name);
-      setRole(person.role);
       setSector(person.sector as Sector);
-      setAvatarUrl(person.avatar_url);
+      setSelectedColor(person.avatar_url || CARD_COLORS[0].value);
     } else {
       setName('');
-      setRole('');
       setSector('Comercial');
-      setAvatarUrl(null);
+      setSelectedColor(CARD_COLORS[0].value);
     }
   }, [person, open]);
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setAvatarUrl(data.publicUrl);
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !role.trim()) return;
+    if (!name.trim()) return;
 
     if (person) {
-      onUpdate(person.id, { name, role, sector, avatar_url: avatarUrl });
+      onUpdate(person.id, { 
+        name, 
+        sector, 
+        avatar_url: selectedColor,
+        role: sector // Keep role synced with sector for compatibility
+      });
     } else {
       onSave({
         name,
-        role,
+        role: sector, // Use sector as role for compatibility
         sector,
-        avatar_url: avatarUrl,
+        avatar_url: selectedColor,
         position_x: 200 + Math.random() * 300,
         position_y: 200 + Math.random() * 200,
       });
@@ -115,51 +84,50 @@ export function PersonDialog({
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const sectorClass = SECTOR_COLORS[sector] || 'sector-comercial';
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {person ? 'Editar Pessoa' : 'Adicionar Pessoa'}
+            {person ? 'Editar' : 'Adicionar'}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Avatar upload */}
+          {/* Color preview */}
           <div className="flex justify-center">
-            <div className="relative">
-              <Avatar className="h-24 w-24 border-4 border-border">
-                <AvatarImage src={avatarUrl || undefined} />
-                <AvatarFallback className={cn(sectorClass, 'text-white text-xl font-semibold')}>
-                  {name ? getInitials(name) : '?'}
-                </AvatarFallback>
-              </Avatar>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
-                disabled={uploading}
-              >
-                <Camera className="h-4 w-4" />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
+            <div 
+              className="w-48 h-20 rounded-xl shadow-lg flex items-center justify-center"
+              style={{ backgroundColor: selectedColor }}
+            >
+              <span className="text-white font-bold text-lg drop-shadow-sm">
+                {name || 'Nome'}
+              </span>
+            </div>
+          </div>
+
+          {/* Color picker */}
+          <div className="space-y-2">
+            <Label>Cor</Label>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {CARD_COLORS.map(color => (
+                <button
+                  key={color.value}
+                  type="button"
+                  className={cn(
+                    'w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center',
+                    'hover:scale-110 hover:ring-2 hover:ring-offset-2 hover:ring-offset-background',
+                    selectedColor === color.value && 'ring-2 ring-offset-2 ring-offset-background ring-foreground scale-110'
+                  )}
+                  style={{ backgroundColor: color.value }}
+                  onClick={() => setSelectedColor(color.value)}
+                  title={color.name}
+                >
+                  {selectedColor === color.value && (
+                    <Check className="h-5 w-5 text-white drop-shadow-md" />
+                  )}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -170,18 +138,7 @@ export function PersonDialog({
                 id="name"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Nome completo"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role">Cargo</Label>
-              <Input
-                id="role"
-                value={role}
-                onChange={e => setRole(e.target.value)}
-                placeholder="Ex: Gerente Comercial"
+                placeholder="Nome"
                 required
               />
             </div>
