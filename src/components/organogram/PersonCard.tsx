@@ -2,7 +2,7 @@ import { useState, useRef, memo, useCallback } from 'react';
 import { Person, CARD_COLORS, CardSize, CARD_SIZES } from '@/types/organogram';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Lock, Unlock } from 'lucide-react';
 
 interface PersonCardProps {
   person: Person;
@@ -13,6 +13,7 @@ interface PersonCardProps {
   onDoubleClick: (person: Person) => void;
   onSelect?: (personId: string) => void;
   onDelete?: (personId: string) => void;
+  onToggleLock?: (personId: string, locked: boolean) => void;
   isConnecting: boolean;
   connectingFrom: string | null;
   isDragging: boolean;
@@ -29,6 +30,7 @@ export const PersonCard = memo(function PersonCard({
   onDoubleClick,
   onSelect,
   onDelete,
+  onToggleLock,
   isConnecting,
   connectingFrom,
   isDragging,
@@ -56,6 +58,12 @@ export const PersonCard = memo(function PersonCard({
     // Don't start drag if clicking on delete button or connection points
     const target = e.target as HTMLElement;
     if (target.closest('button')) return;
+    
+    // Don't allow drag if card is locked
+    if (person.locked) {
+      e.stopPropagation();
+      return;
+    }
     
     e.stopPropagation();
     dragStartRef.current = { x: e.clientX, y: e.clientY };
@@ -100,6 +108,14 @@ export const PersonCard = memo(function PersonCard({
     }
   }, [onDelete, person.id]);
 
+  const handleToggleLock = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleLock) {
+      onToggleLock(person.id, !person.locked);
+    }
+  }, [onToggleLock, person.id, person.locked]);
+
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     // Only open dialog if we didn't just drag
@@ -118,7 +134,8 @@ export const PersonCard = memo(function PersonCard({
     <div
       ref={cardRef}
       className={cn(
-        'group org-card absolute z-10 cursor-grab select-none',
+        'group org-card absolute z-10 select-none',
+        person.locked ? 'cursor-default' : 'cursor-grab',
         'rounded-xl shadow-lg overflow-hidden',
         'transition-shadow duration-200',
         !fillCard && 'border-2 bg-card',
@@ -162,19 +179,37 @@ export const PersonCard = memo(function PersonCard({
         )}
       </div>
 
-      {/* Delete button - shows on hover */}
-      {onDelete && (
-        <button
-          className={cn(
-            'absolute top-1 right-1 p-1 rounded-md bg-destructive/90 text-destructive-foreground hover:bg-destructive transition-opacity duration-150',
-            (isMobile || isSelected) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          )}
-          onClick={handleDelete}
-          title="Remover"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      )}
+      {/* Action buttons container - shows on hover */}
+      <div className={cn(
+        'absolute top-1 right-1 flex gap-1 transition-opacity duration-150',
+        (isMobile || isSelected) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+      )}>
+        {/* Lock button */}
+        {onToggleLock && (
+          <button
+            className={cn(
+              'p-1 rounded-md transition-colors',
+              person.locked 
+                ? 'bg-amber-500/90 text-white hover:bg-amber-600' 
+                : 'bg-muted/90 text-muted-foreground hover:bg-muted'
+            )}
+            onClick={handleToggleLock}
+            title={person.locked ? 'Desbloquear posição' : 'Travar posição'}
+          >
+            {person.locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+          </button>
+        )}
+        {/* Delete button */}
+        {onDelete && (
+          <button
+            className="p-1 rounded-md bg-destructive/90 text-destructive-foreground hover:bg-destructive"
+            onClick={handleDelete}
+            title="Remover"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
 
       {/* Connection points */}
       {(showConnectionPoints || isConnecting) && (

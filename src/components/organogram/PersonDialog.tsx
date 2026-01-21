@@ -97,6 +97,7 @@ export function PersonDialog({
         sector_id: selectedSectorId,
         card_size: 'small',
         fill_card: fillCard,
+        locked: false,
       });
     }
     onOpenChange(false);

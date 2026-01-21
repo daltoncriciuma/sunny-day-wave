@@ -495,6 +495,7 @@ export function Canvas() {
               onDoubleClick={handleCardClick}
               onSelect={handleSelectCard}
               onDelete={deletePerson}
+              onToggleLock={(id, locked) => updatePerson(id, { locked })}
               isConnecting={!!connectingFrom}
               connectingFrom={connectingFrom}
               isDragging={draggingPerson?.id === person.id}
