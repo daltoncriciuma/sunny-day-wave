@@ -46,33 +46,47 @@ export function PersonCard({
     }
   };
 
+  const handleConnectionPointMouseDown = (e: React.MouseEvent) => {
+    // Drag-to-connect behavior
+    e.preventDefault();
+    e.stopPropagation();
+    onConnectionStart(person.id);
+  };
+
+  const handleMouseUp = () => {
+    onDragEnd();
+    if (connectingFrom && connectingFrom !== person.id) {
+      onConnectionEnd(person.id);
+    }
+  };
+
   return (
     <div
       ref={cardRef}
       className={cn(
         'org-card absolute cursor-grab select-none',
         'w-56 h-24 rounded-xl shadow-lg overflow-hidden',
-        'border border-border/50',
+        'border-2 bg-card',
         isDragging && 'dragging'
       )}
       style={{
         left: person.position_x,
         top: person.position_y,
         transform: 'translate(-50%, -50%)',
-        backgroundColor: cardColor,
+        borderColor: cardColor,
       }}
       onMouseDown={handleMouseDown}
-      onMouseUp={onDragEnd}
+      onMouseUp={handleMouseUp}
       onMouseEnter={() => setShowConnectionPoints(true)}
       onMouseLeave={() => setShowConnectionPoints(false)}
       onDoubleClick={() => !isDragging && onDoubleClick(person)}
     >
       {/* Content */}
       <div className="p-4 h-full flex flex-col justify-center items-center text-center">
-        <h3 className="font-bold text-white text-base leading-tight drop-shadow-sm">
+        <h3 className="font-bold text-foreground text-base leading-tight">
           {person.name}
         </h3>
-        <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full border border-white/40 text-white/90">
+        <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded-full border border-border text-muted-foreground">
           {person.sector}
         </span>
       </div>
@@ -84,23 +98,21 @@ export function PersonCard({
           <button
             className={cn(
               'connection-point absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2',
-              'w-4 h-4 rounded-full border-2 border-white bg-white/30',
-              'hover:bg-white hover:scale-125',
-              isConnecting && connectingFrom !== person.id && 'bg-white animate-pulse'
+              'w-4 h-4 rounded-full border-2 border-foreground/40 bg-background/80',
+              'hover:scale-125',
+              isConnecting && connectingFrom !== person.id && 'animate-pulse'
             )}
-            onClick={handleConnectionPointClick}
-            onMouseDown={e => e.stopPropagation()}
+            onMouseDown={handleConnectionPointMouseDown}
           />
           {/* Left connection point */}
           <button
             className={cn(
               'connection-point absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2',
-              'w-4 h-4 rounded-full border-2 border-white bg-white/30',
-              'hover:bg-white hover:scale-125',
-              isConnecting && connectingFrom !== person.id && 'bg-white animate-pulse'
+              'w-4 h-4 rounded-full border-2 border-foreground/40 bg-background/80',
+              'hover:scale-125',
+              isConnecting && connectingFrom !== person.id && 'animate-pulse'
             )}
-            onClick={handleConnectionPointClick}
-            onMouseDown={e => e.stopPropagation()}
+            onMouseDown={handleConnectionPointMouseDown}
           />
         </>
       )}

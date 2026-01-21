@@ -123,8 +123,9 @@ export function Canvas() {
   const handleMouseUp = () => {
     setDraggingPerson(null);
     setIsPanning(false);
-    if (connectingFrom && !tempConnection) {
+    if (connectingFrom) {
       setConnectingFrom(null);
+      setTempConnection(null);
     }
   };
 
