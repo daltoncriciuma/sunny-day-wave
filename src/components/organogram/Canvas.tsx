@@ -246,6 +246,12 @@ export function Canvas() {
     }
   }, [draggingPerson]);
 
+  // Single click selects card (so Delete/backspace and mobile trash work)
+  const handleSelectCard = useCallback((personId: string) => {
+    setSelectedIds(new Set([personId]));
+    setSelectedConnectionId(null);
+  }, []);
+
   // Handle add person
   const handleAddPerson = useCallback((position?: { x: number; y: number }) => {
     setSelectedPerson(null);
@@ -420,6 +426,7 @@ export function Canvas() {
               onConnectionStart={handleConnectionStart}
               onConnectionEnd={handleConnectionEnd}
               onDoubleClick={handleCardClick}
+              onSelect={handleSelectCard}
               onDelete={deletePerson}
               isConnecting={!!connectingFrom}
               connectingFrom={connectingFrom}
