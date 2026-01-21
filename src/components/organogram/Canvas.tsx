@@ -420,6 +420,7 @@ export function Canvas() {
               onConnectionStart={handleConnectionStart}
               onConnectionEnd={handleConnectionEnd}
               onDoubleClick={handleCardClick}
+              onDelete={deletePerson}
               isConnecting={!!connectingFrom}
               connectingFrom={connectingFrom}
               isDragging={draggingPerson?.id === person.id}
