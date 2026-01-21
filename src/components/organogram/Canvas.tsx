@@ -133,11 +133,12 @@ export function Canvas() {
     });
     setDraggingPerson(person);
 
-    // If the card is selected, prepare group drag
+    // If the card is selected, prepare group drag (excluding locked cards)
     if (selectedIds.has(person.id)) {
       const positions = new Map<string, { x: number; y: number }>();
       people.forEach(p => {
-        if (selectedIds.has(p.id)) {
+        // Only include unlocked cards in group drag
+        if (selectedIds.has(p.id) && !p.locked) {
           positions.set(p.id, { x: p.position_x, y: p.position_y });
         }
       });
