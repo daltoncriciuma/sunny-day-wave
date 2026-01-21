@@ -11,6 +11,7 @@ export interface Person {
   position_y: number;
   sector_id: string | null;
   card_size: CardSize;
+  fill_card: boolean;
   created_at: string;
   updated_at: string;
 }

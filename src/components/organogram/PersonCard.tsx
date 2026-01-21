@@ -111,13 +111,17 @@ export const PersonCard = memo(function PersonCard({
   const handleMouseEnter = useCallback(() => setShowConnectionPoints(true), []);
   const handleMouseLeave = useCallback(() => setShowConnectionPoints(false), []);
 
+  // Check if card should be filled
+  const fillCard = (person as any).fill_card || false;
+
   return (
     <div
       ref={cardRef}
       className={cn(
         'group org-card absolute z-10 cursor-grab select-none',
         'rounded-xl shadow-lg overflow-hidden',
-        'border-2 bg-card transition-shadow duration-200',
+        'transition-shadow duration-200',
+        !fillCard && 'border-2 bg-card',
         isDragging && 'dragging',
         isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
       )}
@@ -127,7 +131,8 @@ export const PersonCard = memo(function PersonCard({
         width,
         height,
         transform: 'translate(-50%, -50%)',
-        borderColor: cardColor,
+        backgroundColor: fillCard ? cardColor : undefined,
+        borderColor: !fillCard ? cardColor : undefined,
       }}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
@@ -139,13 +144,19 @@ export const PersonCard = memo(function PersonCard({
       {/* Content */}
       <div className="p-2 h-full flex flex-col justify-center items-center text-center">
         <h3 className={cn(
-          'font-bold text-foreground leading-tight truncate w-full',
-          isCollapsed ? 'text-sm' : 'text-base'
+          'font-bold leading-tight truncate w-full',
+          isCollapsed ? 'text-sm' : 'text-base',
+          fillCard ? 'text-white drop-shadow-sm' : 'text-foreground'
         )}>
           {person.name}
         </h3>
         {!isCollapsed && person.sector && (
-          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full border border-border text-muted-foreground truncate max-w-full">
+          <span className={cn(
+            "inline-block mt-1 text-xs px-2 py-0.5 rounded-full truncate max-w-full",
+            fillCard 
+              ? "bg-white/20 text-white/90" 
+              : "border border-border text-muted-foreground"
+          )}>
             {person.sector}
           </span>
         )}

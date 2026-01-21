@@ -55,6 +55,7 @@ export type Database = {
           avatar_url: string | null
           card_size: string
           created_at: string
+          fill_card: boolean
           id: string
           name: string
           position_x: number
@@ -68,6 +69,7 @@ export type Database = {
           avatar_url?: string | null
           card_size?: string
           created_at?: string
+          fill_card?: boolean
           id?: string
           name: string
           position_x?: number
@@ -81,6 +83,7 @@ export type Database = {
           avatar_url?: string | null
           card_size?: string
           created_at?: string
+          fill_card?: boolean
           id?: string
           name?: string
           position_x?: number
