@@ -1,8 +1,13 @@
-import { Plus, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Plus, ZoomIn, ZoomOut, Maximize2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SectorFilter } from './SectorFilter';
 import { Sector } from '@/types/organogram';
 import h2oLogo from '@/assets/h2o-logo.png';
+
+const externalLinks = [
+  { name: 'Tarefas', url: 'https://h2otarefas.lovable.app/' },
+  { name: 'Sales Soul', url: 'https://sales-soul.lovable.app' },
+];
 
 interface TopBarProps {
   onAddPerson: () => void;
@@ -36,7 +41,22 @@ export function TopBar({
       <div className="flex items-center gap-3">
         <img src={h2oLogo} alt="H2O Logo" className="h-8 w-auto" />
         
-        <div className="ml-4">
+        <div className="flex items-center gap-2 ml-4">
+          {externalLinks.map((link) => (
+            <a
+              key={link.url}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground bg-secondary hover:bg-secondary/80 rounded-md transition-colors"
+            >
+              {link.name}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          ))}
+        </div>
+
+        <div className="ml-2">
           <SectorFilter
             sectors={sectors}
             selectedSectorId={selectedSectorId}
