@@ -6,7 +6,8 @@ import { PersonCard } from './PersonCard';
 import { ConnectionLines } from './ConnectionLines';
 import { PersonDialog } from './PersonDialog';
 import { ViewControls } from './ViewControls';
-import { Loader2, Plus } from 'lucide-react';
+import { SelectionBox } from './SelectionBox';
+import { Loader2, Plus, Trash2, ArrowLeftRight } from 'lucide-react';
 
 export function Canvas() {
   const {
@@ -18,6 +19,8 @@ export function Canvas() {
     updatePosition,
     deletePerson,
     addConnection,
+    deleteConnection,
+    invertConnection,
   } = useOrganogram();
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -46,6 +49,17 @@ export function Canvas() {
   // View controls state
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [cardSize, setCardSize] = useState<CardSize>('medium');
+
+  // Multi-selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{ x: number; y: number } | null>(null);
+  const [dragGroupStartPositions, setDragGroupStartPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+
+  // Connection selection state
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
+  const [connectionContextMenu, setConnectionContextMenu] = useState<{ x: number; y: number; connectionId: string } | null>(null);
 
   // Handle zoom
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2));
@@ -92,31 +106,65 @@ export function Canvas() {
       y: pos.y - person.position_y,
     });
     setDraggingPerson(person);
+
+    // If the card is selected, prepare group drag
+    if (selectedIds.has(person.id)) {
+      const positions = new Map<string, { x: number; y: number }>();
+      people.forEach(p => {
+        if (selectedIds.has(p.id)) {
+          positions.set(p.id, { x: p.position_x, y: p.position_y });
+        }
+      });
+      setDragGroupStartPositions(positions);
+    } else {
+      // Clear selection if dragging unselected card
+      setSelectedIds(new Set());
+      setDragGroupStartPositions(new Map());
+    }
   };
 
   const handleDragEnd = () => {
     setDraggingPerson(null);
+    setDragGroupStartPositions(new Map());
   };
 
-  // Handle panning (left click on empty canvas)
+  // Handle panning (middle click or space + drag) and selection
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Close context menu on any click
+    // Close context menus on any click
     setContextMenu(null);
+    setConnectionContextMenu(null);
     
     if (e.target === canvasRef.current && e.button === 0) {
-      setIsPanning(true);
-      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      // Left click on empty canvas = start box selection
+      const pos = getCanvasPosition(e.clientX, e.clientY);
+      setIsSelecting(true);
+      setSelectionStart(pos);
+      setSelectionEnd(pos);
+      setSelectedIds(new Set());
+      setSelectedConnectionId(null);
     }
   };
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (draggingPerson) {
       const pos = getCanvasPosition(e.clientX, e.clientY);
-      updatePosition(
-        draggingPerson.id,
-        pos.x - dragOffset.x,
-        pos.y - dragOffset.y
-      );
+      const newX = pos.x - dragOffset.x;
+      const newY = pos.y - dragOffset.y;
+
+      if (selectedIds.has(draggingPerson.id) && dragGroupStartPositions.size > 0) {
+        // Group drag: calculate delta and apply to all selected
+        const startPos = dragGroupStartPositions.get(draggingPerson.id);
+        if (startPos) {
+          const deltaX = newX - startPos.x;
+          const deltaY = newY - startPos.y;
+          
+          dragGroupStartPositions.forEach((originalPos, id) => {
+            updatePosition(id, originalPos.x + deltaX, originalPos.y + deltaY);
+          });
+        }
+      } else {
+        updatePosition(draggingPerson.id, newX, newY);
+      }
     } else if (isPanning) {
       setPan({
         x: e.clientX - panStart.x,
@@ -129,11 +177,47 @@ export function Canvas() {
         toX: pos.x,
         toY: pos.y,
       });
+    } else if (isSelecting && selectionStart) {
+      const pos = getCanvasPosition(e.clientX, e.clientY);
+      setSelectionEnd(pos);
     }
-  }, [draggingPerson, isPanning, connectingFrom, getCanvasPosition, dragOffset, panStart, updatePosition]);
+  }, [draggingPerson, isPanning, connectingFrom, isSelecting, selectionStart, getCanvasPosition, dragOffset, panStart, updatePosition, selectedIds, dragGroupStartPositions]);
 
   const handleMouseUp = () => {
+    if (isSelecting && selectionStart && selectionEnd) {
+      // Calculate bounding box
+      const left = Math.min(selectionStart.x, selectionEnd.x);
+      const right = Math.max(selectionStart.x, selectionEnd.x);
+      const top = Math.min(selectionStart.y, selectionEnd.y);
+      const bottom = Math.max(selectionStart.y, selectionEnd.y);
+      
+      // Find cards inside selection box
+      const selected = new Set<string>();
+      const cardWidth = CARD_SIZES[cardSize].width;
+      const cardHeight = isCollapsed ? 40 : CARD_SIZES[cardSize].height;
+      
+      people.forEach(person => {
+        // Card center is at position_x, position_y; card spans from center - half to center + half
+        const cardLeft = person.position_x - cardWidth / 2;
+        const cardRight = person.position_x + cardWidth / 2;
+        const cardTop = person.position_y - cardHeight / 2;
+        const cardBottom = person.position_y + cardHeight / 2;
+        
+        // Check intersection
+        if (cardRight > left && cardLeft < right && cardBottom > top && cardTop < bottom) {
+          selected.add(person.id);
+        }
+      });
+      
+      setSelectedIds(selected);
+      setIsSelecting(false);
+      setSelectionStart(null);
+      setSelectionEnd(null);
+      return;
+    }
+
     setDraggingPerson(null);
+    setDragGroupStartPositions(new Map());
     setIsPanning(false);
     if (connectingFrom) {
       setConnectingFrom(null);
@@ -198,25 +282,80 @@ export function Canvas() {
 
   // Close context menu on click outside
   useEffect(() => {
-    const handleClickOutside = () => setContextMenu(null);
-    if (contextMenu) {
+    const handleClickOutside = () => {
+      setContextMenu(null);
+      setConnectionContextMenu(null);
+    };
+    if (contextMenu || connectionContextMenu) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [contextMenu]);
+  }, [contextMenu, connectionContextMenu]);
 
-  // Cancel connection on escape
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setConnectingFrom(null);
         setTempConnection(null);
         setContextMenu(null);
+        setConnectionContextMenu(null);
+        setSelectedIds(new Set());
+        setSelectedConnectionId(null);
+      }
+      
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Delete selected connection
+        if (selectedConnectionId) {
+          deleteConnection(selectedConnectionId);
+          setSelectedConnectionId(null);
+        }
+        // Delete selected cards
+        if (selectedIds.size > 0) {
+          selectedIds.forEach(id => deletePerson(id));
+          setSelectedIds(new Set());
+        }
+      }
+      
+      // Select all with Ctrl+A
+      if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setSelectedIds(new Set(people.map(p => p.id)));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [selectedConnectionId, selectedIds, deleteConnection, deletePerson, people]);
+
+  // Connection click handlers
+  const handleConnectionClick = (connectionId: string) => {
+    setSelectedConnectionId(connectionId);
+    setSelectedIds(new Set()); // Clear card selection when selecting connection
+  };
+
+  const handleConnectionContextMenu = (e: React.MouseEvent, connectionId: string) => {
+    setConnectionContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      connectionId,
+    });
+    setSelectedConnectionId(connectionId);
+  };
+
+  const handleDeleteConnection = () => {
+    if (connectionContextMenu) {
+      deleteConnection(connectionContextMenu.connectionId);
+      setConnectionContextMenu(null);
+      setSelectedConnectionId(null);
+    }
+  };
+
+  const handleInvertConnection = () => {
+    if (connectionContextMenu) {
+      invertConnection(connectionContextMenu.connectionId);
+      setConnectionContextMenu(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -262,7 +401,15 @@ export function Canvas() {
             tempConnection={tempConnection}
             cardSize={cardSize}
             isCollapsed={isCollapsed}
+            selectedConnectionId={selectedConnectionId}
+            onConnectionClick={handleConnectionClick}
+            onConnectionContextMenu={handleConnectionContextMenu}
           />
+
+          {/* Selection box */}
+          {isSelecting && selectionStart && selectionEnd && (
+            <SelectionBox start={selectionStart} end={selectionEnd} />
+          )}
 
           {people.map(person => (
             <PersonCard
@@ -276,7 +423,7 @@ export function Canvas() {
               isConnecting={!!connectingFrom}
               connectingFrom={connectingFrom}
               isDragging={draggingPerson?.id === person.id}
-              isSelected={false}
+              isSelected={selectedIds.has(person.id)}
               cardSize={cardSize}
               isCollapsed={isCollapsed}
             />
@@ -284,7 +431,7 @@ export function Canvas() {
         </div>
       </div>
 
-      {/* Custom context menu */}
+      {/* Card context menu */}
       {contextMenu && (
         <div
           className="fixed bg-popover border border-border rounded-md shadow-lg py-1 z-[9999]"
@@ -299,6 +446,32 @@ export function Canvas() {
           >
             <Plus className="h-4 w-4" />
             Adicionar caixa
+          </button>
+        </div>
+      )}
+
+      {/* Connection context menu */}
+      {connectionContextMenu && (
+        <div
+          className="fixed bg-popover border border-border rounded-md shadow-lg py-1 z-[9999]"
+          style={{
+            left: connectionContextMenu.x,
+            top: connectionContextMenu.y,
+          }}
+        >
+          <button
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent text-left"
+            onClick={handleInvertConnection}
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            Inverter direção
+          </button>
+          <button
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-destructive hover:text-destructive-foreground text-left"
+            onClick={handleDeleteConnection}
+          >
+            <Trash2 className="h-4 w-4" />
+            Remover conexão
           </button>
         </div>
       )}

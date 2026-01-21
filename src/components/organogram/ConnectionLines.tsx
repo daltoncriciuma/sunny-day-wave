@@ -6,13 +6,24 @@ interface ConnectionLinesProps {
   tempConnection: { from: string; toX: number; toY: number } | null;
   cardSize: CardSize;
   isCollapsed: boolean;
+  selectedConnectionId: string | null;
+  onConnectionClick: (id: string) => void;
+  onConnectionContextMenu: (e: React.MouseEvent, id: string) => void;
 }
 
-export function ConnectionLines({ connections, people, tempConnection, cardSize, isCollapsed }: ConnectionLinesProps) {
+export function ConnectionLines({
+  connections,
+  people,
+  tempConnection,
+  cardSize,
+  isCollapsed,
+  selectedConnectionId,
+  onConnectionClick,
+  onConnectionContextMenu,
+}: ConnectionLinesProps) {
   // Get card dimensions based on size and collapsed state
   const dimensions = CARD_SIZES[cardSize];
   const CARD_WIDTH = dimensions.width;
-  const CARD_HEIGHT = isCollapsed ? 40 : dimensions.height;
 
   const getPersonById = (personId: string) => {
     return people.find(p => p.id === personId);
@@ -20,8 +31,6 @@ export function ConnectionLines({ connections, people, tempConnection, cardSize,
 
   // Get connection point on the right side of the card (for "from")
   const getRightConnectionPoint = (person: Person) => ({
-    // NOTE: person.position_x / position_y represent the CARD CENTER
-    // because the card is rendered with translate(-50%, -50%).
     x: person.position_x + CARD_WIDTH / 2,
     y: person.position_y,
   });
@@ -37,14 +46,12 @@ export function ConnectionLines({ connections, people, tempConnection, cardSize,
     const fromCenterX = fromPerson.position_x;
     const toCenterX = toPerson.position_x;
 
-    // If target is to the right, connect from right to left
     if (toCenterX > fromCenterX) {
       return {
         from: getRightConnectionPoint(fromPerson),
         to: getLeftConnectionPoint(toPerson),
       };
     } else {
-      // If target is to the left, connect from left to right
       return {
         from: getLeftConnectionPoint(fromPerson),
         to: getRightConnectionPoint(toPerson),
@@ -54,13 +61,11 @@ export function ConnectionLines({ connections, people, tempConnection, cardSize,
 
   const createPath = (from: { x: number; y: number }, to: { x: number; y: number }) => {
     const midX = (from.x + to.x) / 2;
-    
-    // Bezier curve for smooth horizontal connection
     return `M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`;
   };
 
   return (
-    <svg className="absolute inset-0 pointer-events-none overflow-visible" style={{ zIndex: 5 }}>
+    <svg className="absolute inset-0 overflow-visible" style={{ zIndex: 5 }}>
       <defs>
         <marker
           id="arrowhead"
@@ -73,6 +78,19 @@ export function ConnectionLines({ connections, people, tempConnection, cardSize,
           <polygon
             points="0 0, 10 3.5, 0 7"
             fill="hsl(var(--connection-line))"
+          />
+        </marker>
+        <marker
+          id="arrowhead-selected"
+          markerWidth="10"
+          markerHeight="7"
+          refX="9"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon
+            points="0 0, 10 3.5, 0 7"
+            fill="hsl(var(--primary))"
           />
         </marker>
         <marker
@@ -97,17 +115,38 @@ export function ConnectionLines({ connections, people, tempConnection, cardSize,
         if (!fromPerson || !toPerson) return null;
 
         const { from, to } = getConnectionPoints(fromPerson, toPerson);
+        const isSelected = selectedConnectionId === conn.id;
+        const pathD = createPath(from, to);
 
         return (
-          <path
-            key={conn.id}
-            d={createPath(from, to)}
-            stroke="hsl(var(--connection-line))"
-            strokeWidth="2"
-            fill="none"
-            markerEnd="url(#arrowhead)"
-            className="transition-all duration-200"
-          />
+          <g key={conn.id}>
+            {/* Invisible hit area for clicking */}
+            <path
+              d={pathD}
+              stroke="transparent"
+              strokeWidth="16"
+              fill="none"
+              className="cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                onConnectionClick(conn.id);
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onConnectionContextMenu(e, conn.id);
+              }}
+            />
+            {/* Visible connection line */}
+            <path
+              d={pathD}
+              stroke={isSelected ? 'hsl(var(--primary))' : 'hsl(var(--connection-line))'}
+              strokeWidth={isSelected ? 3 : 2}
+              fill="none"
+              markerEnd={isSelected ? 'url(#arrowhead-selected)' : 'url(#arrowhead)'}
+              className="pointer-events-none transition-all duration-200"
+            />
+          </g>
         );
       })}
 
@@ -126,7 +165,7 @@ export function ConnectionLines({ connections, people, tempConnection, cardSize,
             strokeDasharray="5,5"
             fill="none"
             markerEnd="url(#arrowhead-temp)"
-            className="animate-pulse"
+            className="animate-pulse pointer-events-none"
           />
         );
       })()}
