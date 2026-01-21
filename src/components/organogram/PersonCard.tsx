@@ -116,7 +116,7 @@ export const PersonCard = memo(function PersonCard({
     <div
       ref={cardRef}
       className={cn(
-        'group org-card absolute cursor-grab select-none',
+        'group org-card absolute z-10 cursor-grab select-none',
         'rounded-xl shadow-lg overflow-hidden',
         'border-2 bg-card transition-shadow duration-200',
         isDragging && 'dragging',
