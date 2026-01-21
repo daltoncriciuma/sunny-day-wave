@@ -6,7 +6,7 @@ import h2oLogo from '@/assets/h2o-logo.png';
 
 const externalLinks = [
   { name: 'Tarefas', url: 'https://h2otarefas.lovable.app/' },
-  { name: 'Sales Soul', url: 'https://sales-soul.lovable.app' },
+  { name: 'CRM', url: 'https://sales-soul.lovable.app' },
 ];
 
 interface TopBarProps {
