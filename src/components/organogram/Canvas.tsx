@@ -87,6 +87,9 @@ export function Canvas() {
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const [connectionContextMenu, setConnectionContextMenu] = useState<{ x: number; y: number; connectionId: string } | null>(null);
 
+  // Copy/paste state
+  const [clipboard, setClipboard] = useState<Person[]>([]);
+
   // Handle zoom
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2));
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.5));
@@ -405,10 +408,44 @@ export function Canvas() {
         e.preventDefault();
         setSelectedIds(new Set(people.map(p => p.id)));
       }
+
+      // Copy with Ctrl+C
+      if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+        if (selectedIds.size > 0) {
+          const selectedPeople = people.filter(p => selectedIds.has(p.id));
+          setClipboard(selectedPeople);
+        }
+      }
+
+      // Paste with Ctrl+V
+      if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+        if (clipboard.length > 0) {
+          e.preventDefault();
+          
+          // Calculate offset for pasted cards (50px down-right)
+          const offset = 50;
+          
+          // Create new cards from clipboard
+          clipboard.forEach(person => {
+            addPerson({
+              name: person.name,
+              role: person.role,
+              sector: person.sector,
+              sector_id: person.sector_id,
+              avatar_url: person.avatar_url,
+              position_x: person.position_x + offset,
+              position_y: person.position_y + offset,
+              card_size: person.card_size,
+              fill_card: person.fill_card,
+              locked: false, // Pasted cards are always unlocked
+            });
+          });
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dialogOpen, selectedConnectionId, selectedIds, deleteConnection, deletePerson, people]);
+  }, [dialogOpen, selectedConnectionId, selectedIds, deleteConnection, deletePerson, people, clipboard, addPerson]);
 
   // Connection click handlers
   const handleConnectionClick = useCallback((connectionId: string) => {
