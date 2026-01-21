@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Person, SECTORS, Sector, CARD_COLORS } from '@/types/organogram';
+import { Person, CARD_COLORS } from '@/types/organogram';
 import {
   Dialog,
   DialogContent,
@@ -10,13 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Trash2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,17 +34,17 @@ export function PersonDialog({
   onDelete,
 }: PersonDialogProps) {
   const [name, setName] = useState('');
-  const [sector, setSector] = useState<Sector>('Comercial');
+  const [observations, setObservations] = useState('');
   const [selectedColor, setSelectedColor] = useState(CARD_COLORS[0].value);
 
   useEffect(() => {
     if (person) {
       setName(person.name);
-      setSector(person.sector as Sector);
+      setObservations(person.sector || '');
       setSelectedColor(person.avatar_url || CARD_COLORS[0].value);
     } else {
       setName('');
-      setSector('Comercial');
+      setObservations('');
       setSelectedColor(CARD_COLORS[0].value);
     }
   }, [person, open]);
@@ -62,9 +56,9 @@ export function PersonDialog({
     if (person) {
       onUpdate(person.id, { 
         name, 
-        sector, 
+        sector: observations, 
         avatar_url: selectedColor,
-        role: sector // Keep role synced with sector for compatibility
+        role: observations // Keep role synced for compatibility
       });
     } else {
       const pos = initialPosition || { 
@@ -73,8 +67,8 @@ export function PersonDialog({
       };
       onSave({
         name,
-        role: sector, // Use sector as role for compatibility
-        sector,
+        role: observations,
+        sector: observations,
         avatar_url: selectedColor,
         position_x: pos.x,
         position_y: pos.y,
@@ -150,19 +144,15 @@ export function PersonDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sector">Setor</Label>
-              <Select value={sector} onValueChange={(v) => setSector(v as Sector)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SECTORS.map(s => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="observations">Observações</Label>
+              <Textarea
+                id="observations"
+                value={observations}
+                onChange={e => setObservations(e.target.value)}
+                placeholder="Adicione observações..."
+                rows={3}
+                className="resize-none"
+              />
             </div>
           </div>
 
