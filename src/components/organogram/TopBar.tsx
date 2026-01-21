@@ -2,6 +2,7 @@ import { Plus, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SectorFilter } from './SectorFilter';
 import { Sector } from '@/types/organogram';
+import h2oLogo from '@/assets/h2o-logo.png';
 
 interface TopBarProps {
   onAddPerson: () => void;
@@ -33,10 +34,7 @@ export function TopBar({
   return (
     <header className="fixed top-0 left-0 right-0 h-14 bg-card/80 backdrop-blur-lg border-b border-border z-50 flex items-center justify-between px-4">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-sm">O</span>
-        </div>
-        <h1 className="font-semibold text-foreground">Organograma</h1>
+        <img src={h2oLogo} alt="H2O Logo" className="h-8 w-auto" />
         
         <div className="ml-4">
           <SectorFilter
