@@ -1,14 +1,16 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useOrganogram } from '@/hooks/useOrganogram';
 import { useSectors } from '@/hooks/useSectors';
-import { Person, CardSize, CARD_SIZES } from '@/types/organogram';
+import { useLines } from '@/hooks/useLines';
+import { Person, CardSize, CARD_SIZES, DecorativeLine } from '@/types/organogram';
 import { TopBar } from './TopBar';
 import { PersonCard } from './PersonCard';
 import { ConnectionLines } from './ConnectionLines';
+import { DecorativeLines } from './DecorativeLines';
 import { PersonDialog } from './PersonDialog';
 import { ViewControls } from './ViewControls';
 import { SelectionBox } from './SelectionBox';
-import { Loader2, Plus, Trash2, ArrowLeftRight } from 'lucide-react';
+import { Loader2, Plus, Trash2, ArrowLeftRight, Minus } from 'lucide-react';
 
 export function Canvas() {
   const {
@@ -31,6 +33,14 @@ export function Canvas() {
     updateSector,
     deleteSector,
   } = useSectors();
+
+  const {
+    lines,
+    loading: linesLoading,
+    addLine,
+    updateLinePosition,
+    deleteLine,
+  } = useLines();
 
   // Sector filter state
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
@@ -86,6 +96,13 @@ export function Canvas() {
   // Connection selection state
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const [connectionContextMenu, setConnectionContextMenu] = useState<{ x: number; y: number; connectionId: string } | null>(null);
+
+  // Line selection state
+  const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
+  const [lineContextMenu, setLineContextMenu] = useState<{ x: number; y: number; lineId: string } | null>(null);
+  const [isDrawingLine, setIsDrawingLine] = useState(false);
+  const [lineStart, setLineStart] = useState<{ x: number; y: number } | null>(null);
+  const [tempLineEnd, setTempLineEnd] = useState<{ x: number; y: number } | null>(null);
 
   // Copy/paste state
   const [clipboard, setClipboard] = useState<Person[]>([]);
@@ -163,6 +180,7 @@ export function Canvas() {
     // Close context menus on any click
     setContextMenu(null);
     setConnectionContextMenu(null);
+    setLineContextMenu(null);
     
     // Check if clicking on a card or button (not empty canvas)
     const target = e.target as HTMLElement;
@@ -179,6 +197,16 @@ export function Canvas() {
     }
     
     if (!isClickOnCard && !isClickOnButton && e.button === 0) {
+      // If drawing line mode is active
+      if (isDrawingLine) {
+        const pos = getCanvasPosition(e.clientX, e.clientY);
+        if (!lineStart) {
+          setLineStart(pos);
+          setTempLineEnd(pos);
+        }
+        return;
+      }
+      
       // Left click on empty canvas = start box selection
       const pos = getCanvasPosition(e.clientX, e.clientY);
       setIsSelecting(true);
@@ -186,8 +214,9 @@ export function Canvas() {
       setSelectionEnd(pos);
       setSelectedIds(new Set());
       setSelectedConnectionId(null);
+      setSelectedLineId(null);
     }
-  }, [getCanvasPosition, pan]);
+  }, [getCanvasPosition, pan, isDrawingLine, lineStart]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (draggingPerson) {
@@ -222,13 +251,40 @@ export function Canvas() {
         toX: pos.x,
         toY: pos.y,
       });
+    } else if (isDrawingLine && lineStart) {
+      const pos = getCanvasPosition(e.clientX, e.clientY);
+      setTempLineEnd(pos);
     } else if (isSelecting && selectionStart) {
       const pos = getCanvasPosition(e.clientX, e.clientY);
       setSelectionEnd(pos);
     }
-  }, [draggingPerson, isPanning, connectingFrom, isSelecting, selectionStart, getCanvasPosition, dragOffset, panStart, updatePosition, selectedIds, dragGroupStartPositions]);
+  }, [draggingPerson, isPanning, connectingFrom, isSelecting, selectionStart, getCanvasPosition, dragOffset, panStart, updatePosition, selectedIds, dragGroupStartPositions, isDrawingLine, lineStart]);
 
   const handleMouseUp = useCallback(() => {
+    // Finish drawing line
+    if (isDrawingLine && lineStart && tempLineEnd) {
+      // Only create line if it has some length
+      const dx = tempLineEnd.x - lineStart.x;
+      const dy = tempLineEnd.y - lineStart.y;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      
+      if (length > 10) {
+        addLine({
+          start_x: lineStart.x,
+          start_y: lineStart.y,
+          end_x: tempLineEnd.x,
+          end_y: tempLineEnd.y,
+          color: '#6B7280',
+          stroke_width: 2,
+        });
+      }
+      
+      setLineStart(null);
+      setTempLineEnd(null);
+      setIsDrawingLine(false);
+      return;
+    }
+    
     if (isSelecting && selectionStart && selectionEnd) {
       // Calculate bounding box
       const left = Math.min(selectionStart.x, selectionEnd.x);
@@ -270,7 +326,7 @@ export function Canvas() {
       setConnectingFrom(null);
       setTempConnection(null);
     }
-  }, [isSelecting, selectionStart, selectionEnd, isCollapsed, people, connectingFrom]);
+  }, [isSelecting, selectionStart, selectionEnd, isCollapsed, people, connectingFrom, isDrawingLine, lineStart, tempLineEnd, addLine]);
 
   // Handle connection
   const handleConnectionStart = useCallback((personId: string) => {
@@ -355,17 +411,50 @@ export function Canvas() {
     }
   }, [contextMenu, handleAddPerson]);
 
+  // Add line from context menu
+  const handleContextMenuAddLine = useCallback(() => {
+    if (contextMenu) {
+      setIsDrawingLine(true);
+      setContextMenu(null);
+    }
+  }, [contextMenu]);
+
+  // Line handlers
+  const handleLineClick = useCallback((lineId: string) => {
+    setSelectedLineId(lineId);
+    setSelectedIds(new Set());
+    setSelectedConnectionId(null);
+  }, []);
+
+  const handleLineContextMenu = useCallback((e: React.MouseEvent, lineId: string) => {
+    setLineContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      lineId,
+    });
+    setSelectedLineId(lineId);
+  }, []);
+
+  const handleDeleteLine = useCallback(() => {
+    if (lineContextMenu) {
+      deleteLine(lineContextMenu.lineId);
+      setLineContextMenu(null);
+      setSelectedLineId(null);
+    }
+  }, [lineContextMenu, deleteLine]);
+
   // Close context menu on click outside
   useEffect(() => {
     const handleClickOutside = () => {
       setContextMenu(null);
       setConnectionContextMenu(null);
+      setLineContextMenu(null);
     };
-    if (contextMenu || connectionContextMenu) {
+    if (contextMenu || connectionContextMenu || lineContextMenu) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [contextMenu, connectionContextMenu]);
+  }, [contextMenu, connectionContextMenu, lineContextMenu]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -383,14 +472,24 @@ export function Canvas() {
         setTempConnection(null);
         setContextMenu(null);
         setConnectionContextMenu(null);
+        setLineContextMenu(null);
         setSelectedIds(new Set());
         setSelectedConnectionId(null);
+        setSelectedLineId(null);
+        setIsDrawingLine(false);
+        setLineStart(null);
+        setTempLineEnd(null);
       }
       
       // Don't run destructive/global shortcuts while editing a card (dialog) or typing in a field.
       if (dialogOpen || isTypingInField) return;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Delete selected line
+        if (selectedLineId) {
+          deleteLine(selectedLineId);
+          setSelectedLineId(null);
+        }
         // Delete selected connection
         if (selectedConnectionId) {
           deleteConnection(selectedConnectionId);
@@ -445,7 +544,7 @@ export function Canvas() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dialogOpen, selectedConnectionId, selectedIds, deleteConnection, deletePerson, people, clipboard, addPerson]);
+  }, [dialogOpen, selectedConnectionId, selectedIds, deleteConnection, deletePerson, people, clipboard, addPerson, selectedLineId, deleteLine]);
 
   // Connection click handlers
   const handleConnectionClick = useCallback((connectionId: string) => {
@@ -505,7 +604,7 @@ export function Canvas() {
         ref={canvasRef}
         className="absolute inset-0 pt-14 canvas-grid overflow-hidden"
         style={{
-          cursor: isPanning ? 'grabbing' : draggingPerson ? 'grabbing' : 'grab',
+          cursor: isDrawingLine ? 'crosshair' : isPanning ? 'grabbing' : draggingPerson ? 'grabbing' : 'grab',
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -523,6 +622,32 @@ export function Canvas() {
             transformOrigin: 'top left',
           }}
         >
+          {/* Decorative lines (behind everything) */}
+          <DecorativeLines
+            lines={lines}
+            selectedLineId={selectedLineId}
+            onLineClick={handleLineClick}
+            onLineContextMenu={handleLineContextMenu}
+          />
+
+          {/* Temp line while drawing */}
+          {isDrawingLine && lineStart && tempLineEnd && (
+            <svg
+              className="absolute inset-0 pointer-events-none"
+              style={{ width: '6000px', height: '4000px' }}
+            >
+              <line
+                x1={lineStart.x}
+                y1={lineStart.y}
+                x2={tempLineEnd.x}
+                y2={tempLineEnd.y}
+                stroke="#6B7280"
+                strokeWidth={2}
+                strokeDasharray="5,5"
+              />
+            </svg>
+          )}
+
           <ConnectionLines
             connections={filteredConnections}
             people={filteredPeople}
@@ -575,6 +700,32 @@ export function Canvas() {
           >
             <Plus className="h-4 w-4" />
             Adicionar caixa
+          </button>
+          <button
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent text-left"
+            onClick={handleContextMenuAddLine}
+          >
+            <Minus className="h-4 w-4" />
+            Adicionar linha
+          </button>
+        </div>
+      )}
+
+      {/* Line context menu */}
+      {lineContextMenu && (
+        <div
+          className="fixed bg-popover border border-border rounded-md shadow-lg py-1 z-[9999]"
+          style={{
+            left: lineContextMenu.x,
+            top: lineContextMenu.y,
+          }}
+        >
+          <button
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-destructive hover:text-destructive-foreground text-left"
+            onClick={handleDeleteLine}
+          >
+            <Trash2 className="h-4 w-4" />
+            Remover linha
           </button>
         </div>
       )}

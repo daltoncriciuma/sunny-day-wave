@@ -50,6 +50,39 @@ export type Database = {
           },
         ]
       }
+      org_lines: {
+        Row: {
+          color: string
+          created_at: string
+          end_x: number
+          end_y: number
+          id: string
+          start_x: number
+          start_y: number
+          stroke_width: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          end_x?: number
+          end_y?: number
+          id?: string
+          start_x?: number
+          start_y?: number
+          stroke_width?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          end_x?: number
+          end_y?: number
+          id?: string
+          start_x?: number
+          start_y?: number
+          stroke_width?: number
+        }
+        Relationships: []
+      }
       org_people: {
         Row: {
           avatar_url: string | null
