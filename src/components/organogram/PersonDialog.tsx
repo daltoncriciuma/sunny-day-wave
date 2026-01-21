@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Person, CARD_COLORS } from '@/types/organogram';
+import { Person, Sector, CARD_COLORS } from '@/types/organogram';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Trash2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +26,7 @@ interface PersonDialogProps {
   onOpenChange: (open: boolean) => void;
   person: Person | null;
   initialPosition?: { x: number; y: number } | null;
+  sectors: Sector[];
   onSave: (data: Omit<Person, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdate: (id: string, data: Partial<Person>) => void;
   onDelete: (id: string) => void;
@@ -29,6 +37,7 @@ export function PersonDialog({
   onOpenChange,
   person,
   initialPosition,
+  sectors,
   onSave,
   onUpdate,
   onDelete,
@@ -36,16 +45,19 @@ export function PersonDialog({
   const [name, setName] = useState('');
   const [observations, setObservations] = useState('');
   const [selectedColor, setSelectedColor] = useState(CARD_COLORS[0].value);
+  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
 
   useEffect(() => {
     if (person) {
       setName(person.name);
       setObservations(person.sector || '');
       setSelectedColor(person.avatar_url || CARD_COLORS[0].value);
+      setSelectedSectorId(person.sector_id || null);
     } else {
       setName('');
       setObservations('');
       setSelectedColor(CARD_COLORS[0].value);
+      setSelectedSectorId(null);
     }
   }, [person, open]);
 
@@ -58,7 +70,8 @@ export function PersonDialog({
         name, 
         sector: observations, 
         avatar_url: selectedColor,
-        role: observations // Keep role synced for compatibility
+        role: observations,
+        sector_id: selectedSectorId,
       });
     } else {
       const pos = initialPosition || { 
@@ -72,6 +85,7 @@ export function PersonDialog({
         avatar_url: selectedColor,
         position_x: pos.x,
         position_y: pos.y,
+        sector_id: selectedSectorId,
       });
     }
     onOpenChange(false);
@@ -83,6 +97,8 @@ export function PersonDialog({
       onOpenChange(false);
     }
   };
+
+  const selectedSector = sectors.find(s => s.id === selectedSectorId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -141,6 +157,45 @@ export function PersonDialog({
                 placeholder="Nome"
                 required
               />
+            </div>
+
+            {/* Sector dropdown */}
+            <div className="space-y-2">
+              <Label htmlFor="sector">Setor</Label>
+              <Select
+                value={selectedSectorId || 'none'}
+                onValueChange={(value) => setSelectedSectorId(value === 'none' ? null : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um setor">
+                    {selectedSector ? (
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: selectedSector.color }}
+                        />
+                        {selectedSector.name}
+                      </div>
+                    ) : (
+                      'Sem setor'
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="z-[9999]">
+                  <SelectItem value="none">Sem setor</SelectItem>
+                  {sectors.map(sector => (
+                    <SelectItem key={sector.id} value={sector.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: sector.color }}
+                        />
+                        {sector.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

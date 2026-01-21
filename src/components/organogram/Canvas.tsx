@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useOrganogram } from '@/hooks/useOrganogram';
+import { useSectors } from '@/hooks/useSectors';
 import { Person, CardSize, CARD_SIZES } from '@/types/organogram';
 import { TopBar } from './TopBar';
 import { PersonCard } from './PersonCard';
@@ -22,6 +23,31 @@ export function Canvas() {
     deleteConnection,
     invertConnection,
   } = useOrganogram();
+
+  const {
+    sectors,
+    loading: sectorsLoading,
+    addSector,
+    updateSector,
+    deleteSector,
+  } = useSectors();
+
+  // Sector filter state
+  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
+
+  // Filter people by selected sector
+  const filteredPeople = useMemo(() => {
+    if (!selectedSectorId) return people;
+    return people.filter(p => p.sector_id === selectedSectorId);
+  }, [people, selectedSectorId]);
+
+  // Filter connections to only show those between visible people
+  const filteredConnections = useMemo(() => {
+    const visibleIds = new Set(filteredPeople.map(p => p.id));
+    return connections.filter(
+      c => visibleIds.has(c.from_person_id) && visibleIds.has(c.to_person_id)
+    );
+  }, [connections, filteredPeople]);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -379,6 +405,12 @@ export function Canvas() {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetView={handleResetView}
+        sectors={sectors}
+        selectedSectorId={selectedSectorId}
+        onSelectSector={setSelectedSectorId}
+        onAddSector={addSector}
+        onUpdateSector={updateSector}
+        onDeleteSector={deleteSector}
       />
 
       <div
@@ -402,8 +434,8 @@ export function Canvas() {
           }}
         >
           <ConnectionLines
-            connections={connections}
-            people={people}
+            connections={filteredConnections}
+            people={filteredPeople}
             tempConnection={tempConnection}
             cardSize={cardSize}
             isCollapsed={isCollapsed}
@@ -417,7 +449,7 @@ export function Canvas() {
             <SelectionBox start={selectionStart} end={selectionEnd} />
           )}
 
-          {people.map(person => (
+          {filteredPeople.map(person => (
             <PersonCard
               key={person.id}
               person={person}
@@ -496,6 +528,7 @@ export function Canvas() {
         onOpenChange={setDialogOpen}
         person={selectedPerson}
         initialPosition={newCardPosition}
+        sectors={sectors}
         onSave={addPerson}
         onUpdate={updatePerson}
         onDelete={deletePerson}

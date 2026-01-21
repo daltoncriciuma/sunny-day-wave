@@ -6,6 +6,7 @@ export interface Person {
   avatar_url: string | null;
   position_x: number;
   position_y: number;
+  sector_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -17,9 +18,12 @@ export interface Connection {
   created_at: string;
 }
 
-export type Sector = 'Comercial' | 'Financeiro' | 'RH' | 'Operações' | 'Marketing';
-
-export const SECTORS: Sector[] = ['Comercial', 'Financeiro', 'RH', 'Operações', 'Marketing'];
+export interface Sector {
+  id: string;
+  name: string;
+  color: string;
+  created_at: string;
+}
 
 // Vibrant colors for cards
 export const CARD_COLORS = [
@@ -34,14 +38,6 @@ export const CARD_COLORS = [
   { name: 'Índigo', value: '#6366F1', class: 'bg-indigo-500' },
   { name: 'Esmeralda', value: '#10B981', class: 'bg-emerald-500' },
 ];
-
-export const SECTOR_COLORS: Record<Sector, string> = {
-  'Comercial': 'sector-comercial',
-  'Financeiro': 'sector-financeiro',
-  'RH': 'sector-rh',
-  'Operações': 'sector-operacoes',
-  'Marketing': 'sector-marketing',
-};
 
 // Card sizes
 export type CardSize = 'small' | 'medium' | 'large';

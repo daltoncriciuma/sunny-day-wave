@@ -1,5 +1,7 @@
 import { Plus, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SectorFilter } from './SectorFilter';
+import { Sector } from '@/types/organogram';
 
 interface TopBarProps {
   onAddPerson: () => void;
@@ -7,9 +9,27 @@ interface TopBarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetView: () => void;
+  sectors: Sector[];
+  selectedSectorId: string | null;
+  onSelectSector: (sectorId: string | null) => void;
+  onAddSector: (name: string, color: string) => Promise<Sector | null>;
+  onUpdateSector: (id: string, updates: { name?: string; color?: string }) => Promise<Sector | null>;
+  onDeleteSector: (id: string) => Promise<void>;
 }
 
-export function TopBar({ onAddPerson, zoom, onZoomIn, onZoomOut, onResetView }: TopBarProps) {
+export function TopBar({
+  onAddPerson,
+  zoom,
+  onZoomIn,
+  onZoomOut,
+  onResetView,
+  sectors,
+  selectedSectorId,
+  onSelectSector,
+  onAddSector,
+  onUpdateSector,
+  onDeleteSector,
+}: TopBarProps) {
   return (
     <header className="fixed top-0 left-0 right-0 h-14 bg-card/80 backdrop-blur-lg border-b border-border z-50 flex items-center justify-between px-4">
       <div className="flex items-center gap-3">
@@ -17,6 +37,17 @@ export function TopBar({ onAddPerson, zoom, onZoomIn, onZoomOut, onResetView }: 
           <span className="text-primary-foreground font-bold text-sm">O</span>
         </div>
         <h1 className="font-semibold text-foreground">Organograma</h1>
+        
+        <div className="ml-4">
+          <SectorFilter
+            sectors={sectors}
+            selectedSectorId={selectedSectorId}
+            onSelectSector={onSelectSector}
+            onAddSector={onAddSector}
+            onUpdateSector={onUpdateSector}
+            onDeleteSector={onDeleteSector}
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
