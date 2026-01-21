@@ -227,7 +227,7 @@ export function Canvas() {
               onDragEnd={handleDragEnd}
               onConnectionStart={handleConnectionStart}
               onConnectionEnd={handleConnectionEnd}
-              onClick={handleCardClick}
+              onDoubleClick={handleCardClick}
               isConnecting={!!connectingFrom}
               connectingFrom={connectingFrom}
               isDragging={draggingPerson?.id === person.id}
