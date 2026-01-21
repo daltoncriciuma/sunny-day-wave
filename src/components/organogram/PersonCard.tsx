@@ -77,7 +77,7 @@ export function PersonCard({
     <div
       ref={cardRef}
       className={cn(
-        'org-card absolute cursor-grab select-none',
+        'group org-card absolute cursor-grab select-none',
         'rounded-xl shadow-lg overflow-hidden',
         'border-2 bg-card transition-all duration-200',
         isDragging && 'dragging',
@@ -112,16 +112,10 @@ export function PersonCard({
         )}
       </div>
 
-      {/* Delete button */}
-      {showConnectionPoints && onDelete && (
+      {/* Delete button - shows on hover */}
+      {onDelete && (
         <button
-          className={cn(
-            'absolute top-1 right-1 p-1 rounded-md',
-            'bg-destructive/90 text-destructive-foreground',
-            'opacity-0 group-hover:opacity-100 hover:bg-destructive',
-            'transition-opacity duration-150',
-            showConnectionPoints && 'opacity-100'
-          )}
+          className="absolute top-1 right-1 p-1 rounded-md bg-destructive/90 text-destructive-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive transition-opacity duration-150"
           onClick={handleDelete}
           title="Remover"
         >
