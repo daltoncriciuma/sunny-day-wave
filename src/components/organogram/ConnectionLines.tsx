@@ -1,10 +1,9 @@
-import { Person, Connection, CardSize, CARD_SIZES } from '@/types/organogram';
+import { Person, Connection, CARD_SIZES } from '@/types/organogram';
 
 interface ConnectionLinesProps {
   connections: Connection[];
   people: Person[];
   tempConnection: { from: string; toX: number; toY: number } | null;
-  cardSize: CardSize;
   isCollapsed: boolean;
   selectedConnectionId: string | null;
   onConnectionClick: (id: string) => void;
@@ -15,29 +14,30 @@ export function ConnectionLines({
   connections,
   people,
   tempConnection,
-  cardSize,
   isCollapsed,
   selectedConnectionId,
   onConnectionClick,
   onConnectionContextMenu,
 }: ConnectionLinesProps) {
-  // Get card dimensions based on size and collapsed state
-  const dimensions = CARD_SIZES[cardSize];
-  const CARD_WIDTH = dimensions.width;
-
   const getPersonById = (personId: string) => {
     return people.find(p => p.id === personId);
   };
 
+  // Get card width based on person's individual card_size
+  const getCardWidth = (person: Person) => {
+    const size = person.card_size || 'medium';
+    return CARD_SIZES[size].width;
+  };
+
   // Get connection point on the right side of the card (for "from")
   const getRightConnectionPoint = (person: Person) => ({
-    x: person.position_x + CARD_WIDTH / 2,
+    x: person.position_x + getCardWidth(person) / 2,
     y: person.position_y,
   });
 
   // Get connection point on the left side of the card (for "to")
   const getLeftConnectionPoint = (person: Person) => ({
-    x: person.position_x - CARD_WIDTH / 2,
+    x: person.position_x - getCardWidth(person) / 2,
     y: person.position_y,
   });
 

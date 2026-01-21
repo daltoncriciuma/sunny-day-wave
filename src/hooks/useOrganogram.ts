@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Person, Connection } from '@/types/organogram';
+import { Person, Connection, CardSize } from '@/types/organogram';
 import { useToast } from '@/hooks/use-toast';
 
 export function useOrganogram() {
@@ -23,7 +23,12 @@ export function useOrganogram() {
       if (peopleRes.error) throw peopleRes.error;
       if (connectionsRes.error) throw connectionsRes.error;
 
-      setPeople(peopleRes.data || []);
+      // Cast card_size to CardSize type
+      const typedPeople = (peopleRes.data || []).map(p => ({
+        ...p,
+        card_size: (p.card_size || 'medium') as CardSize,
+      }));
+      setPeople(typedPeople);
       setConnections(connectionsRes.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -69,13 +74,14 @@ export function useOrganogram() {
 
       if (error) throw error;
       
-      setPeople(prev => [...prev, data]);
+      const typedData = { ...data, card_size: (data.card_size || 'medium') as CardSize };
+      setPeople(prev => [...prev, typedData]);
       toast({
         title: 'Processo adicionado',
         description: `${person.name} foi adicionado ao organograma.`,
       });
       
-      return data;
+      return typedData;
     } catch (error) {
       console.error('Error adding process:', error);
       toast({
@@ -98,8 +104,9 @@ export function useOrganogram() {
 
       if (error) throw error;
       
-      setPeople(prev => prev.map(p => p.id === id ? data : p));
-      return data;
+      const typedData = { ...data, card_size: (data.card_size || 'medium') as CardSize };
+      setPeople(prev => prev.map(p => p.id === id ? typedData : p));
+      return typedData;
     } catch (error) {
       console.error('Error updating process:', error);
       toast({

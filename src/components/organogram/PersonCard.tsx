@@ -17,7 +17,6 @@ interface PersonCardProps {
   connectingFrom: string | null;
   isDragging: boolean;
   isSelected?: boolean;
-  cardSize: CardSize;
   isCollapsed: boolean;
 }
 
@@ -34,7 +33,6 @@ export const PersonCard = memo(function PersonCard({
   connectingFrom,
   isDragging,
   isSelected,
-  cardSize,
   isCollapsed,
 }: PersonCardProps) {
   const isMobile = useIsMobile();
@@ -44,7 +42,8 @@ export const PersonCard = memo(function PersonCard({
   // Get color from avatar_url (we're reusing this field to store color)
   const cardColor = person.avatar_url || CARD_COLORS[0].value;
   
-  // Get dimensions based on size and collapsed state
+  // Get dimensions based on person's individual card_size and collapsed state
+  const cardSize = person.card_size || 'medium';
   const dimensions = CARD_SIZES[cardSize];
   const height = isCollapsed ? 40 : dimensions.height;
   const width = dimensions.width;
