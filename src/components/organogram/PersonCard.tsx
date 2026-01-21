@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, memo, useCallback } from 'react';
 import { Person, CARD_COLORS, CardSize, CARD_SIZES } from '@/types/organogram';
 import { cn } from '@/lib/utils';
 import { Trash2 } from 'lucide-react';
@@ -19,7 +19,7 @@ interface PersonCardProps {
   isCollapsed: boolean;
 }
 
-export function PersonCard({
+export const PersonCard = memo(function PersonCard({
   person,
   onDragStart,
   onDragEnd,
@@ -45,33 +45,41 @@ export function PersonCard({
   const height = isCollapsed ? 40 : dimensions.height;
   const width = dimensions.width;
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
     e.preventDefault();
     onDragStart(e, person);
-  };
+  }, [onDragStart, person]);
 
-  const handleConnectionPointMouseDown = (e: React.MouseEvent) => {
-    // Drag-to-connect behavior
+  const handleConnectionPointMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onConnectionStart(person.id);
-  };
+  }, [onConnectionStart, person.id]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     onDragEnd();
     if (connectingFrom && connectingFrom !== person.id) {
       onConnectionEnd(person.id);
     }
-  };
+  }, [onDragEnd, connectingFrom, person.id, onConnectionEnd]);
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (onDelete) {
       onDelete(person.id);
     }
-  };
+  }, [onDelete, person.id]);
+
+  const handleDoubleClick = useCallback(() => {
+    if (!isDragging) {
+      onDoubleClick(person);
+    }
+  }, [isDragging, onDoubleClick, person]);
+
+  const handleMouseEnter = useCallback(() => setShowConnectionPoints(true), []);
+  const handleMouseLeave = useCallback(() => setShowConnectionPoints(false), []);
 
   return (
     <div
@@ -79,7 +87,7 @@ export function PersonCard({
       className={cn(
         'group org-card absolute cursor-grab select-none',
         'rounded-xl shadow-lg overflow-hidden',
-        'border-2 bg-card transition-all duration-200',
+        'border-2 bg-card transition-shadow duration-200',
         isDragging && 'dragging',
         isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
       )}
@@ -93,9 +101,9 @@ export function PersonCard({
       }}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
-      onMouseEnter={() => setShowConnectionPoints(true)}
-      onMouseLeave={() => setShowConnectionPoints(false)}
-      onDoubleClick={() => !isDragging && onDoubleClick(person)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onDoubleClick={handleDoubleClick}
     >
       {/* Content */}
       <div className="p-2 h-full flex flex-col justify-center items-center text-center">
@@ -150,4 +158,4 @@ export function PersonCard({
       )}
     </div>
   );
-}
+});

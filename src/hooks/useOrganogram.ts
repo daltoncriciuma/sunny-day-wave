@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Person, Connection } from '@/types/organogram';
 import { useToast } from '@/hooks/use-toast';
@@ -8,6 +8,10 @@ export function useOrganogram() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Debounce refs for position updates
+  const pendingUpdates = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -36,6 +40,24 @@ export function useOrganogram() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+  
+  // Flush pending position updates to database
+  const flushPositionUpdates = useCallback(async () => {
+    if (pendingUpdates.current.size === 0) return;
+    
+    const updates = Array.from(pendingUpdates.current.entries());
+    pendingUpdates.current.clear();
+    
+    // Batch update all positions
+    await Promise.all(
+      updates.map(([id, pos]) =>
+        supabase
+          .from('org_people')
+          .update({ position_x: pos.x, position_y: pos.y })
+          .eq('id', id)
+      )
+    );
+  }, []);
 
   const addPerson = async (person: Omit<Person, 'id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -89,22 +111,23 @@ export function useOrganogram() {
     }
   };
 
-  const updatePosition = async (id: string, position_x: number, position_y: number) => {
+  const updatePosition = useCallback((id: string, position_x: number, position_y: number) => {
     // Update local state immediately for smooth dragging
     setPeople(prev => prev.map(p => 
       p.id === id ? { ...p, position_x, position_y } : p
     ));
 
-    // Then persist to database
-    try {
-      await supabase
-        .from('org_people')
-        .update({ position_x, position_y })
-        .eq('id', id);
-    } catch (error) {
-      console.error('Error updating position:', error);
+    // Queue the update
+    pendingUpdates.current.set(id, { x: position_x, y: position_y });
+    
+    // Debounce database updates (save after 300ms of no changes)
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
     }
-  };
+    debounceTimer.current = setTimeout(() => {
+      flushPositionUpdates();
+    }, 300);
+  }, [flushPositionUpdates]);
 
   const deletePerson = async (id: string) => {
     try {
