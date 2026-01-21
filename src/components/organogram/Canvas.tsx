@@ -74,7 +74,6 @@ export function Canvas() {
 
   // View controls state
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [cardSize, setCardSize] = useState<CardSize>('medium');
 
   // Multi-selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -219,10 +218,12 @@ export function Canvas() {
       
       // Find cards inside selection box
       const selected = new Set<string>();
-      const cardWidth = CARD_SIZES[cardSize].width;
-      const cardHeight = isCollapsed ? 40 : CARD_SIZES[cardSize].height;
       
       people.forEach(person => {
+        // Use person's individual card size
+        const personCardSize = person.card_size || 'medium';
+        const cardWidth = CARD_SIZES[personCardSize].width;
+        const cardHeight = isCollapsed ? 40 : CARD_SIZES[personCardSize].height;
         // Card center is at position_x, position_y; card spans from center - half to center + half
         const cardLeft = person.position_x - cardWidth / 2;
         const cardRight = person.position_x + cardWidth / 2;
@@ -249,7 +250,7 @@ export function Canvas() {
       setConnectingFrom(null);
       setTempConnection(null);
     }
-  }, [isSelecting, selectionStart, selectionEnd, cardSize, isCollapsed, people, connectingFrom]);
+  }, [isSelecting, selectionStart, selectionEnd, isCollapsed, people, connectingFrom]);
 
   // Handle connection
   const handleConnectionStart = useCallback((personId: string) => {
@@ -277,6 +278,23 @@ export function Canvas() {
     setSelectedIds(new Set([personId]));
     setSelectedConnectionId(null);
   }, []);
+
+  // Get selected card size for display in ViewControls
+  const selectedCardSize = useMemo(() => {
+    if (selectedIds.size === 1) {
+      const selectedId = Array.from(selectedIds)[0];
+      const person = people.find(p => p.id === selectedId);
+      return person?.card_size || 'medium';
+    }
+    return null;
+  }, [selectedIds, people]);
+
+  // Handle card size change for selected cards
+  const handleCardSizeChange = useCallback((size: CardSize) => {
+    selectedIds.forEach(id => {
+      updatePerson(id, { card_size: size });
+    });
+  }, [selectedIds, updatePerson]);
 
   // Handle add person
   const handleAddPerson = useCallback((position?: { x: number; y: number }) => {
@@ -437,7 +455,6 @@ export function Canvas() {
             connections={filteredConnections}
             people={filteredPeople}
             tempConnection={tempConnection}
-            cardSize={cardSize}
             isCollapsed={isCollapsed}
             selectedConnectionId={selectedConnectionId}
             onConnectionClick={handleConnectionClick}
@@ -464,7 +481,6 @@ export function Canvas() {
               connectingFrom={connectingFrom}
               isDragging={draggingPerson?.id === person.id}
               isSelected={selectedIds.has(person.id)}
-              cardSize={cardSize}
               isCollapsed={isCollapsed}
             />
           ))}
@@ -519,8 +535,9 @@ export function Canvas() {
       <ViewControls
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-        cardSize={cardSize}
-        onCardSizeChange={setCardSize}
+        selectedCardSize={selectedCardSize}
+        onCardSizeChange={handleCardSizeChange}
+        hasSelection={selectedIds.size > 0}
       />
 
       <PersonDialog

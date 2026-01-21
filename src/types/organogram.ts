@@ -1,3 +1,6 @@
+// Card sizes
+export type CardSize = 'small' | 'medium' | 'large';
+
 export interface Person {
   id: string;
   name: string;
@@ -7,6 +10,7 @@ export interface Person {
   position_x: number;
   position_y: number;
   sector_id: string | null;
+  card_size: CardSize;
   created_at: string;
   updated_at: string;
 }
@@ -38,9 +42,6 @@ export const CARD_COLORS = [
   { name: 'Índigo', value: '#6366F1', class: 'bg-indigo-500' },
   { name: 'Esmeralda', value: '#10B981', class: 'bg-emerald-500' },
 ];
-
-// Card sizes
-export type CardSize = 'small' | 'medium' | 'large';
 
 export const CARD_SIZES: Record<CardSize, { width: number; height: number; label: string }> = {
   small: { width: 160, height: 64, label: 'Pequeno' },

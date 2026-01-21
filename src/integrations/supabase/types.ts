@@ -53,6 +53,7 @@ export type Database = {
       org_people: {
         Row: {
           avatar_url: string | null
+          card_size: string
           created_at: string
           id: string
           name: string
@@ -65,6 +66,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          card_size?: string
           created_at?: string
           id?: string
           name: string
@@ -77,6 +79,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          card_size?: string
           created_at?: string
           id?: string
           name?: string

@@ -12,16 +12,20 @@ import { cn } from '@/lib/utils';
 interface ViewControlsProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  cardSize: CardSize;
+  selectedCardSize: CardSize | null;
   onCardSizeChange: (size: CardSize) => void;
+  hasSelection: boolean;
 }
 
 export function ViewControls({
   isCollapsed,
   onToggleCollapse,
-  cardSize,
+  selectedCardSize,
   onCardSizeChange,
+  hasSelection,
 }: ViewControlsProps) {
+  const displaySize = selectedCardSize || 'medium';
+
   return (
     <div className="fixed bottom-4 right-4 flex gap-2 z-50">
       {/* Collapse/Expand button */}
@@ -39,15 +43,20 @@ export function ViewControls({
         )}
       </Button>
 
-      {/* Size selector */}
+      {/* Size selector - only active when cards are selected */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
             size="sm"
-            className="h-9 bg-background/80 backdrop-blur-sm shadow-md gap-1"
+            className={cn(
+              "h-9 bg-background/80 backdrop-blur-sm shadow-md gap-1",
+              !hasSelection && "opacity-50"
+            )}
+            disabled={!hasSelection}
+            title={hasSelection ? 'Alterar tamanho do card selecionado' : 'Selecione um card para alterar o tamanho'}
           >
-            <span className="text-xs">{CARD_SIZES[cardSize].label}</span>
+            <span className="text-xs">{CARD_SIZES[displaySize].label}</span>
             <ChevronDown className="h-3 w-3" />
           </Button>
         </DropdownMenuTrigger>
@@ -56,7 +65,7 @@ export function ViewControls({
             <DropdownMenuItem
               key={size}
               onClick={() => onCardSizeChange(size)}
-              className={cn(cardSize === size && 'bg-accent')}
+              className={cn(displaySize === size && 'bg-accent')}
             >
               {CARD_SIZES[size].label}
             </DropdownMenuItem>
