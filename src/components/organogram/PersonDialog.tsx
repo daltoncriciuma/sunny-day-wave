@@ -18,8 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Trash2, Check } from 'lucide-react';
+import { Trash2, Check, Square, PaintBucket } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 interface PersonDialogProps {
   open: boolean;
@@ -48,6 +49,7 @@ export function PersonDialog({
   const [observations, setObservations] = useState('');
   const [selectedColor, setSelectedColor] = useState(CARD_COLORS[0].value);
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
+  const [fillCard, setFillCard] = useState(false);
 
   useEffect(() => {
     if (person) {
@@ -55,6 +57,7 @@ export function PersonDialog({
       setObservations(person.sector || '');
       setSelectedColor(person.avatar_url || CARD_COLORS[0].value);
       setSelectedSectorId(person.sector_id || null);
+      setFillCard(person.fill_card || false);
     } else {
       setName('');
       setObservations('');
@@ -62,6 +65,7 @@ export function PersonDialog({
       const defaultSector = sectors.find(s => s.id === defaultSectorId);
       setSelectedSectorId(defaultSectorId || null);
       setSelectedColor(defaultSector?.color || CARD_COLORS[0].value);
+      setFillCard(false);
     }
   }, [person, open, defaultSectorId, sectors]);
 
@@ -76,6 +80,7 @@ export function PersonDialog({
         avatar_url: selectedColor,
         role: observations,
         sector_id: selectedSectorId,
+        fill_card: fillCard,
       });
     } else {
       const pos = initialPosition || { 
@@ -91,6 +96,7 @@ export function PersonDialog({
         position_y: pos.y,
         sector_id: selectedSectorId,
         card_size: 'small',
+        fill_card: fillCard,
       });
     }
     onOpenChange(false);
@@ -118,18 +124,39 @@ export function PersonDialog({
           {/* Color preview */}
           <div className="flex justify-center">
             <div 
-              className="w-48 h-20 rounded-xl shadow-lg flex items-center justify-center"
-              style={{ backgroundColor: selectedColor }}
+              className={cn(
+                "w-48 h-20 rounded-xl shadow-lg flex items-center justify-center",
+                !fillCard && "border-2 bg-card"
+              )}
+              style={{ 
+                backgroundColor: fillCard ? selectedColor : undefined,
+                borderColor: !fillCard ? selectedColor : undefined,
+              }}
             >
-              <span className="text-white font-bold text-lg drop-shadow-sm">
+              <span className={cn(
+                "font-bold text-lg drop-shadow-sm",
+                fillCard ? "text-white" : "text-foreground"
+              )}>
                 {name || 'Nome'}
               </span>
             </div>
           </div>
 
           {/* Color picker */}
-          <div className="space-y-2">
-            <Label>Cor</Label>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Cor</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="fill-card" className="text-sm text-muted-foreground cursor-pointer">
+                  Preencher card
+                </Label>
+                <Switch
+                  id="fill-card"
+                  checked={fillCard}
+                  onCheckedChange={setFillCard}
+                />
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2 justify-center">
               {CARD_COLORS.map(color => (
                 <button
