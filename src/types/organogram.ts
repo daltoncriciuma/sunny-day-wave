@@ -42,3 +42,12 @@ export const SECTOR_COLORS: Record<Sector, string> = {
   'Operações': 'sector-operacoes',
   'Marketing': 'sector-marketing',
 };
+
+// Card sizes
+export type CardSize = 'small' | 'medium' | 'large';
+
+export const CARD_SIZES: Record<CardSize, { width: number; height: number; label: string }> = {
+  small: { width: 160, height: 64, label: 'Pequeno' },
+  medium: { width: 224, height: 96, label: 'Médio' },
+  large: { width: 288, height: 128, label: 'Grande' },
+};
