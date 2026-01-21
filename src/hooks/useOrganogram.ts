@@ -100,9 +100,15 @@ export function useOrganogram() {
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        // Card no longer exists, remove from local state
+        setPeople(prev => prev.filter(p => p.id !== id));
+        return null;
+      }
       
       const typedData = { ...data, card_size: (data.card_size || 'medium') as CardSize };
       setPeople(prev => prev.map(p => p.id === id ? typedData : p));
