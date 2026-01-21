@@ -27,6 +27,7 @@ interface PersonDialogProps {
   person: Person | null;
   initialPosition?: { x: number; y: number } | null;
   sectors: Sector[];
+  defaultSectorId?: string | null;
   onSave: (data: Omit<Person, 'id' | 'created_at' | 'updated_at'>) => void;
   onUpdate: (id: string, data: Partial<Person>) => void;
   onDelete: (id: string) => void;
@@ -38,6 +39,7 @@ export function PersonDialog({
   person,
   initialPosition,
   sectors,
+  defaultSectorId,
   onSave,
   onUpdate,
   onDelete,
@@ -57,9 +59,10 @@ export function PersonDialog({
       setName('');
       setObservations('');
       setSelectedColor(CARD_COLORS[0].value);
-      setSelectedSectorId(null);
+      // Auto-fill sector when filter is active
+      setSelectedSectorId(defaultSectorId || null);
     }
-  }, [person, open]);
+  }, [person, open, defaultSectorId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +108,7 @@ export function PersonDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {person ? 'Editar' : 'Adicionar'}
+            {person ? 'Editar Processo' : 'Adicionar Processo'}
           </DialogTitle>
         </DialogHeader>
 

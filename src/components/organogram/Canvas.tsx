@@ -529,6 +529,7 @@ export function Canvas() {
         person={selectedPerson}
         initialPosition={newCardPosition}
         sectors={sectors}
+        defaultSectorId={selectedSectorId}
         onSave={addPerson}
         onUpdate={updatePerson}
         onDelete={deletePerson}
@@ -539,7 +540,7 @@ export function Canvas() {
         <div className="fixed inset-0 flex items-center justify-center pointer-events-none pt-14">
           <div className="text-center text-muted-foreground">
             <p className="text-lg font-medium">Clique direito ou dê duplo clique na tela</p>
-            <p className="text-sm mt-1">para criar seu primeiro card</p>
+            <p className="text-sm mt-1">para criar seu primeiro processo</p>
           </div>
         </div>
       )}

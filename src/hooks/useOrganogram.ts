@@ -71,16 +71,16 @@ export function useOrganogram() {
       
       setPeople(prev => [...prev, data]);
       toast({
-        title: 'Pessoa adicionada',
-        description: `${person.name} foi adicionado(a) ao organograma.`,
+        title: 'Processo adicionado',
+        description: `${person.name} foi adicionado ao organograma.`,
       });
       
       return data;
     } catch (error) {
-      console.error('Error adding person:', error);
+      console.error('Error adding process:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível adicionar a pessoa.',
+        description: 'Não foi possível adicionar o processo.',
         variant: 'destructive',
       });
       return null;
@@ -101,10 +101,10 @@ export function useOrganogram() {
       setPeople(prev => prev.map(p => p.id === id ? data : p));
       return data;
     } catch (error) {
-      console.error('Error updating person:', error);
+      console.error('Error updating process:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível atualizar a pessoa.',
+        description: 'Não foi possível atualizar o processo.',
         variant: 'destructive',
       });
       return null;
@@ -144,14 +144,14 @@ export function useOrganogram() {
       ));
       
       toast({
-        title: 'Pessoa removida',
-        description: 'A pessoa foi removida do organograma.',
+        title: 'Processo removido',
+        description: 'O processo foi removido do organograma.',
       });
     } catch (error) {
-      console.error('Error deleting person:', error);
+      console.error('Error deleting process:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível remover a pessoa.',
+        description: 'Não foi possível remover o processo.',
         variant: 'destructive',
       });
     }
