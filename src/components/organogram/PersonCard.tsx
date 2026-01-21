@@ -45,9 +45,14 @@ export const PersonCard = memo(function PersonCard({
   const height = isCollapsed ? 40 : dimensions.height;
   const width = dimensions.width;
 
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const hasDraggedRef = useRef(false);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
-    e.preventDefault();
+    e.stopPropagation();
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    hasDraggedRef.current = false;
     onDragStart(e, person);
   }, [onDragStart, person]);
 
@@ -57,11 +62,19 @@ export const PersonCard = memo(function PersonCard({
     onConnectionStart(person.id);
   }, [onConnectionStart, person.id]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    // Check if it was a real drag or just a click
+    if (dragStartRef.current) {
+      const dx = Math.abs(e.clientX - dragStartRef.current.x);
+      const dy = Math.abs(e.clientY - dragStartRef.current.y);
+      hasDraggedRef.current = dx > 5 || dy > 5;
+    }
+    
     onDragEnd();
     if (connectingFrom && connectingFrom !== person.id) {
       onConnectionEnd(person.id);
     }
+    dragStartRef.current = null;
   }, [onDragEnd, connectingFrom, person.id, onConnectionEnd]);
 
   const handleDelete = useCallback((e: React.MouseEvent) => {
@@ -72,11 +85,13 @@ export const PersonCard = memo(function PersonCard({
     }
   }, [onDelete, person.id]);
 
-  const handleDoubleClick = useCallback(() => {
-    if (!isDragging) {
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Only open dialog if we didn't just drag
+    if (!hasDraggedRef.current) {
       onDoubleClick(person);
     }
-  }, [isDragging, onDoubleClick, person]);
+  }, [onDoubleClick, person]);
 
   const handleMouseEnter = useCallback(() => setShowConnectionPoints(true), []);
   const handleMouseLeave = useCallback(() => setShowConnectionPoints(false), []);
