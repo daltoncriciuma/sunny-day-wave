@@ -175,6 +175,29 @@ export function useOrganogram() {
     }
   };
 
+  const invertConnection = async (id: string) => {
+    const connection = connections.find(c => c.id === id);
+    if (!connection) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('org_connections')
+        .update({
+          from_person_id: connection.to_person_id,
+          to_person_id: connection.from_person_id,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setConnections(prev => prev.map(c => c.id === id ? data : c));
+    } catch (error) {
+      console.error('Error inverting connection:', error);
+    }
+  };
+
   return {
     people,
     connections,
@@ -185,6 +208,7 @@ export function useOrganogram() {
     deletePerson,
     addConnection,
     deleteConnection,
+    invertConnection,
     refetch: fetchData,
   };
 }
