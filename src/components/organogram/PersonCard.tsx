@@ -170,8 +170,8 @@ export const PersonCard = memo(function PersonCard({
             {/* Content */}
             <div className="p-2 h-full flex flex-col justify-center items-center text-center">
               <h3 className={cn(
-                'font-bold leading-tight truncate w-full',
-                isCollapsed ? 'text-sm' : 'text-base',
+                'font-bold leading-tight w-full break-words',
+                isCollapsed ? 'text-xs truncate' : 'text-sm',
                 fillCard ? 'text-white drop-shadow-sm' : 'text-foreground'
               )}>
                 {person.name}
