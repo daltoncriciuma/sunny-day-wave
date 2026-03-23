@@ -3,6 +3,12 @@ import { Person, CARD_COLORS, CardSize, CARD_SIZES } from '@/types/organogram';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Trash2, Lock, Unlock } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface PersonCardProps {
   person: Person;
