@@ -137,111 +137,124 @@ export const PersonCard = memo(function PersonCard({
   const fillCard = (person as any).fill_card || false;
 
   return (
-    <div
-      ref={cardRef}
-      className={cn(
-        'group org-card absolute z-10 select-none',
-        person.locked ? 'cursor-default' : 'cursor-grab',
-        'rounded-xl shadow-lg overflow-hidden',
-        'transition-shadow duration-200',
-        !fillCard && 'border-2 bg-card',
-        isDragging && 'dragging',
-        isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-      )}
-      style={{
-        left: person.position_x,
-        top: person.position_y,
-        width,
-        height,
-        transform: 'translate(-50%, -50%)',
-        backgroundColor: fillCard ? cardColor : undefined,
-        borderColor: !fillCard ? cardColor : undefined,
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
-    >
-      {/* Content */}
-      <div className="p-2 h-full flex flex-col justify-center items-center text-center">
-        <h3 className={cn(
-          'font-bold leading-tight truncate w-full',
-          isCollapsed ? 'text-sm' : 'text-base',
-          fillCard ? 'text-white drop-shadow-sm' : 'text-foreground'
-        )}>
-          {person.name}
-        </h3>
-        {!isCollapsed && person.sector && (
-          <span className={cn(
-            "inline-block mt-1 text-xs px-2 py-0.5 rounded-full truncate max-w-full",
-            fillCard 
-              ? "bg-white/20 text-white/90" 
-              : "border border-border text-muted-foreground"
-          )}>
-            {person.sector}
-          </span>
-        )}
-      </div>
-
-      {/* Action buttons container - shows on hover */}
-      <div className={cn(
-        'absolute top-1 right-1 flex gap-1 transition-opacity duration-150',
-        (isMobile || isSelected) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-      )}>
-        {/* Lock button */}
-        {onToggleLock && (
-          <button
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            ref={cardRef}
             className={cn(
-              'p-1 rounded-md transition-colors',
-              person.locked 
-                ? 'bg-amber-500/90 text-white hover:bg-amber-600' 
-                : 'bg-muted/90 text-muted-foreground hover:bg-muted'
+              'group org-card absolute z-10 select-none',
+              person.locked ? 'cursor-default' : 'cursor-grab',
+              'rounded-xl shadow-lg overflow-hidden',
+              'transition-shadow duration-200',
+              !fillCard && 'border-2 bg-card',
+              isDragging && 'dragging',
+              isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
             )}
-            onClick={handleToggleLock}
-            title={person.locked ? 'Desbloquear posição' : 'Travar posição'}
+            style={{
+              left: person.position_x,
+              top: person.position_y,
+              width,
+              height,
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: fillCard ? cardColor : undefined,
+              borderColor: !fillCard ? cardColor : undefined,
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleClick}
+            onDoubleClick={handleDoubleClick}
           >
-            {person.locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
-          </button>
-        )}
-        {/* Delete button */}
-        {onDelete && (
-          <button
-            className="p-1 rounded-md bg-destructive/90 text-destructive-foreground hover:bg-destructive"
-            onClick={handleDelete}
-            title="Remover"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
+            {/* Content */}
+            <div className="p-2 h-full flex flex-col justify-center items-center text-center">
+              <h3 className={cn(
+                'font-bold leading-tight truncate w-full',
+                isCollapsed ? 'text-sm' : 'text-base',
+                fillCard ? 'text-white drop-shadow-sm' : 'text-foreground'
+              )}>
+                {person.name}
+              </h3>
+              {!isCollapsed && person.sector && (
+                <span className={cn(
+                  "inline-block mt-1 text-xs px-2 py-0.5 rounded-full truncate max-w-full",
+                  fillCard 
+                    ? "bg-white/20 text-white/90" 
+                    : "border border-border text-muted-foreground"
+                )}>
+                  {person.sector}
+                </span>
+              )}
+            </div>
 
-      {/* Connection points */}
-      {(showConnectionPoints || isConnecting) && (
-        <>
-          {/* Right connection point */}
-          <button
-            className={cn(
-              'connection-point absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2',
-              'w-4 h-4 rounded-full border-2 border-foreground/40 bg-background/80',
-              'hover:scale-125',
-              isConnecting && connectingFrom !== person.id && 'animate-pulse'
+            {/* Action buttons container - shows on hover */}
+            <div className={cn(
+              'absolute top-1 right-1 flex gap-1 transition-opacity duration-150',
+              (isMobile || isSelected) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            )}>
+              {/* Lock button */}
+              {onToggleLock && (
+                <button
+                  className={cn(
+                    'p-1 rounded-md transition-colors',
+                    person.locked 
+                      ? 'bg-amber-500/90 text-white hover:bg-amber-600' 
+                      : 'bg-muted/90 text-muted-foreground hover:bg-muted'
+                  )}
+                  onClick={handleToggleLock}
+                  title={person.locked ? 'Desbloquear posição' : 'Travar posição'}
+                >
+                  {person.locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+                </button>
+              )}
+              {/* Delete button */}
+              {onDelete && (
+                <button
+                  className="p-1 rounded-md bg-destructive/90 text-destructive-foreground hover:bg-destructive"
+                  onClick={handleDelete}
+                  title="Remover"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Connection points */}
+            {(showConnectionPoints || isConnecting) && (
+              <>
+                <button
+                  className={cn(
+                    'connection-point absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2',
+                    'w-4 h-4 rounded-full border-2 border-foreground/40 bg-background/80',
+                    'hover:scale-125',
+                    isConnecting && connectingFrom !== person.id && 'animate-pulse'
+                  )}
+                  onMouseDown={handleConnectionPointMouseDown}
+                />
+                <button
+                  className={cn(
+                    'connection-point absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2',
+                    'w-4 h-4 rounded-full border-2 border-foreground/40 bg-background/80',
+                    'hover:scale-125',
+                    isConnecting && connectingFrom !== person.id && 'animate-pulse'
+                  )}
+                  onMouseDown={handleConnectionPointMouseDown}
+                />
+              </>
             )}
-            onMouseDown={handleConnectionPointMouseDown}
-          />
-          {/* Left connection point */}
-          <button
-            className={cn(
-              'connection-point absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2',
-              'w-4 h-4 rounded-full border-2 border-foreground/40 bg-background/80',
-              'hover:scale-125',
-              isConnecting && connectingFrom !== person.id && 'animate-pulse'
-            )}
-            onMouseDown={handleConnectionPointMouseDown}
-          />
-        </>
-      )}
-    </div>
+          </div>
+        </TooltipTrigger>
+        {person.sector && (
+          <TooltipContent 
+            side="bottom" 
+            className="max-w-xs whitespace-pre-wrap text-sm z-50"
+          >
+            <p className="font-semibold text-popover-foreground">{person.name}</p>
+            <p className="text-muted-foreground mt-1">{person.sector}</p>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
   );
 });
